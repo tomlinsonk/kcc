@@ -17,8 +17,13 @@ int main() {
 
     struct Token *head = lex(input);
 
-    print_tokens(input, head);
+    // print_tokens(input, head);
+
+    struct SyntaxNode *root = parse(head, input);
+
+    pretty_print(root);
     
+    free_tree(root);
     free_tokens(head);
 
     return 0;

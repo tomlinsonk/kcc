@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+const char *token_type_names[16];
 
 enum TokenType { 
     START_TOKEN,
@@ -28,7 +29,9 @@ struct Token {
     enum TokenType type;
     int index;
     int length;
-    void *value;
+    union {
+        int *int_value;
+    };
     struct Token *next;
 };
 

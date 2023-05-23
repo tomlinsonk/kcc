@@ -41,7 +41,7 @@ void free_tokens(struct Token *head) {
 
     while (current != NULL) {
         next = current->next;
-        free(current->value);
+        free(current->int_value);
         free(current);
         current = next;
     }
@@ -86,7 +86,7 @@ struct Token *lex(char input[]) {
             
             new_token->length = i - new_token->index;
             new_token->type = INT_TOKEN;
-            new_token->value = get_int_value(input, new_token->index, new_token->length);
+            new_token->int_value = get_int_value(input, new_token->index, new_token->length);
         } else if (strchr("+-*/%(){}[];", input[i]) != NULL) {
             new_token->length = 1;
 
@@ -132,7 +132,7 @@ struct Token *lex(char input[]) {
         } else {
             new_token->type = UNKNOWN_TOKEN;
             new_token->index = i;
-            new_token-> length = 1;
+            new_token->length = 1;
             i++;
         }
 
