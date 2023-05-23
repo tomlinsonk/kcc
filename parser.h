@@ -3,8 +3,9 @@
 
 enum SyntaxType {
     INT_CONSTANT_SYNTAX,
-    ADDITIVE_EXPRESSION_SYNTAX,
-    MULTIPLICATIVE_EXPRESSION_SYNTAX,
+    UNARY_EXPRESSION_SYNTAX,
+    BINARY_EXPRESSION_SYNTAX,
+    PARENTHESIZED_EXPRESSION_SYNTAX,
     ERROR_SYNTAX
 };
 
@@ -25,11 +26,11 @@ struct SyntaxNode *parse(struct Token *head, char input_seq[]);
 
 struct SyntaxNode *parse_statement();
 
-struct SyntaxNode *parse_additive_expression();
+struct SyntaxNode *parse_binary_expression(int priority);
 
-struct SyntaxNode *parse_multiplicative_expression();
+struct SyntaxNode *parse_unary_expression();
 
-struct SyntaxNode *parse_integer_constant();
+struct SyntaxNode *parse_primary_expression();
 
 
 
