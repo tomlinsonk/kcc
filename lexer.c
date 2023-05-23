@@ -3,35 +3,10 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "lexer.h"
 
-enum token_type { 
-    START_TOKEN,
-    INT_TOKEN,
-    PLUS_TOKEN,
-    MINUS_TOKEN,
-    STAR_TOKEN,
-    SLASH_TOKEN,
-    OPEN_PAREN_TOKEN,
-    CLOSE_PAREN_TOKEN,
-    OPEN_BRACE_TOKEN,
-    CLOSE_BRACE_TOKEN,
-    OPEN_BRACKET_TOKEN,
-    CLOSE_BRACKET_TOKEN,
-    SEMICOLON_TOKEN,
-    END_TOKEN,
-    UNKNOWN_TOKEN
-};
 
-const char *token_type_names[] = {"START", "INT", "+", "-", "*", "/", "(", ")", "{", "}", "[", "]", ";", "END", "UNKNOWN"};
-
-struct token {
-    enum token_type type;
-    int index;
-    int length;
-    void *value;
-    struct token *next;
-};
-
+const char *token_type_names[] = {"START", "INT", "+", "-", "*", "/", "%", "(", ")", "{", "}", "[", "]", ";", "END", "UNKNOWN"};
 
 /**
  * Return the size of a file
@@ -60,9 +35,9 @@ int *get_int_value(char input[], int start, int length) {
 /**
  * Free every token and value in the given linked list
 */
-void free_tokens(struct token *head) {
-    struct token *current = head;
-    struct token *next = head->next;
+void free_tokens(struct Token *head) {
+    struct Token *current = head;
+    struct Token *next = head->next;
 
     while (current != NULL) {
         next = current->next;
@@ -76,18 +51,18 @@ void free_tokens(struct token *head) {
  * Parse the char array into a linked chain of tokens.
  * @return a pointer to the first token in the chain
 */
-struct token *lex(char input[]) {
+struct Token *lex(char input[]) {
 
-    struct token *head = malloc(sizeof(struct token));
+    struct Token *head = malloc(sizeof(struct Token));
     head->type = START_TOKEN;
 
-    struct token *tail = malloc(sizeof(struct token));
+    struct Token *tail = malloc(sizeof(struct Token));
     tail->type = END_TOKEN;
 
     head->next = tail;
 
-    struct token *cur_token = head;
-    struct token *new_token;
+    struct Token *cur_token = head;
+    struct Token *new_token;
 
 
     int i = 0;
@@ -100,7 +75,7 @@ struct token *lex(char input[]) {
         if (input[i] == '\0')
             break;
 
-        new_token = malloc(sizeof(struct token));
+        new_token = malloc(sizeof(struct Token));
         new_token->index = i;
         new_token->next = tail;
 
@@ -112,7 +87,7 @@ struct token *lex(char input[]) {
             new_token->length = i - new_token->index;
             new_token->type = INT_TOKEN;
             new_token->value = get_int_value(input, new_token->index, new_token->length);
-        } else if (strchr("+-*/(){}[];", input[i]) != NULL) {
+        } else if (strchr("+-*/%(){}[];", input[i]) != NULL) {
             new_token->length = 1;
 
             switch (input[i]) {
@@ -127,7 +102,10 @@ struct token *lex(char input[]) {
                 break;
             case '/':
                 new_token->type = SLASH_TOKEN;
-                break;            
+                break;    
+            case '%':
+                new_token->type = PERCENT_TOKEN;
+                break;                 
             case '(':
                 new_token->type = OPEN_PAREN_TOKEN;
                 break;
@@ -165,10 +143,7 @@ struct token *lex(char input[]) {
     return head;
 }
 
-void print_tokens(char input[], struct token *current) {
-    // skip start token
-    // current = current->next; 
-
+void print_tokens(char input[], struct Token *current) {
     while (current != NULL) {
         printf("%s ", token_type_names[current->type]);
         printf("%.*s\n", current->length, input + current->index);
@@ -178,24 +153,3 @@ void print_tokens(char input[], struct token *current) {
 
 
 
-
-int main() {
-    FILE *fp = fopen("input.txt", "r");
-
-    int size = fsize(fp);
-
-    char input[size+1];
-
-    for (int i = 0; i < size; i++) {
-        input[i] = getc(fp);
-    }
-    input[size] = '\0';
-
-    struct token *head = lex(input);
-
-    print_tokens(input, head);
-    
-    free_tokens(head);
-
-    return 0;
-}
