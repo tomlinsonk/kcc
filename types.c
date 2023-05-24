@@ -6,17 +6,6 @@
 #include "types.h"
 
 
-
-// struct Type CHAR_TYPE;
-// CHAR_TYPE.kind = PRIMITIVE_TYPE;
-// CHAR_TYPE.primitive = _PRIMITIVE;
-
-// struct Type NULL_TYPE;
-// INULL_TYPENT_TYPE.kind = PRIMITIVE_TYPE;
-// NULL_TYPE.primitive = NULL_PRIMITIVE;
-
-
-
 void print_type(struct Type *type) {
     if (type == NULL) {
         printf("null");
@@ -29,15 +18,15 @@ void print_type(struct Type *type) {
         break;
      case ARRAY_TYPE:
         printf("array of ");
-        print_type(type->array.of_type);
+        print_type(type->of_type);
         break;
      case POINTER_TYPE:
         printf("pointer to ");
-        print_type(type->pointer.to_type);
+        print_type(type->to_type);
         break;
      case FUNCTION_TYPE:
-        printf("function: (...) -> ");
-        print_type(type->function.return_type);
+        printf("function returning ");
+        print_type(type->return_type);
         break;
     default:
         break;
@@ -45,6 +34,19 @@ void print_type(struct Type *type) {
 }
 
 int types_match(struct Type *t1, struct Type *t2) {
-    // TODO
-    return 1;
+    if (t1 == t2)
+        return 1;
+    else if (t1->kind != t2->kind)
+        return 0;
+
+    switch (t1->kind) {
+    case PRIMITIVE_TYPE:
+        return t1->primitive == t2->primitive;
+    case ARRAY_TYPE:
+        return types_match(t1->of_type, t2->of_type);
+    case POINTER_TYPE:
+        return types_match(t1->to_type, t2->to_type);
+    case FUNCTION_TYPE:
+        return types_match(t1->return_type, t2->return_type);
+    }
 }

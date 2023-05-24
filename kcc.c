@@ -17,15 +17,17 @@ int main() {
 
     struct Token *head = lex(input);
 
+    printf("\n---- TOKENS ----\n");
     print_tokens(input, head);
 
     struct SyntaxNode *root = parse(head, input);
 
     typecheck(root);
 
+    printf("\n---- PARSE TREE ----\n");
     pretty_print(root);
 
-    printf("Compiled with %i parser errors and %i type errors\n", num_parser_errors, num_type_errors);
+    printf("\nCompiled with %i parser errors and %i type errors.\n\n", num_parser_errors, num_type_errors);
     
     free_tree(root);
     free_tokens(head);
