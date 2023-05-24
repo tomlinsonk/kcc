@@ -2,7 +2,6 @@
 #define TYPES
 
 
-
 enum TypeKind {
     PRIMITIVE_TYPE,
     POINTER_TYPE,
@@ -10,9 +9,7 @@ enum TypeKind {
     FUNCTION_TYPE
 };
 
-
 static const char *primitive_type_names[] = {"error", "void", "int", "char"};
-
 
 enum PrimitiveType {
     ERROR_PRIMITIVE,

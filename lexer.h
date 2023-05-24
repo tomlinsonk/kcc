@@ -3,7 +3,11 @@
 
 #include <stdio.h>
 
-extern const char *token_type_names[];
+static const char *token_type_names[] = {
+    "START", "INT", "+", "-", "*", "/", "%", "(", ")", "{", "}", "[", "]", ";", "STRING", 
+    "IDENTIFIER", "INT_KEYWORD", "CHAR_KEYWORD", "ASM_KEYWORD", "IF_KEYWORD", "ELSE_KEYWORD", "WHILE_KEYWORD", "FOR_KEYWORD", "RETURN_KEYWORD",  
+    "END", "UNKNOWN"
+};
 
 enum TokenKind { 
     START_TOKEN,
@@ -21,6 +25,15 @@ enum TokenKind {
     CLOSE_BRACKET_TOKEN,
     SEMICOLON_TOKEN,
     STRING_LITERAL_TOKEN,
+    IDENTIFIER_TOKEN,
+    INT_KEYWORD_TOKEN,
+    CHAR_KEYWORD_TOKEN,
+    ASM_KEYWORD_TOKEN,
+    IF_KEYWORD_TOKEN,
+    ELSE_KEYWORD_TOKEN,
+    WHILE_KEYWORD_TOKEN,
+    FOR_KEYWORD_TOKEN,
+    RETURN_KEYWORD_TOKEN,
     END_TOKEN,
     UNKNOWN_TOKEN
 };

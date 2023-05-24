@@ -206,8 +206,9 @@ struct SyntaxNode *parse_primary_expression() {
     } else {
         num_parser_errors++;
         printf(BOLD_RED "Error: expected primary expression, got ");
-        printf("%.*s\n" RESET, cur_token->length, input + cur_token->index);
+        printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);
         node->syntax = ERROR_SYNTAX;
+        cur_token = cur_token->next;
     }
 
     return node;

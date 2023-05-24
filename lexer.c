@@ -6,7 +6,6 @@
 #include "lexer.h"
 
 
-const char *token_type_names[] = {"START", "INT", "+", "-", "*", "/", "%", "(", ")", "{", "}", "[", "]", ";", "STRING", "END", "UNKNOWN"};
 
 /**
  * Return the size of a file
@@ -32,6 +31,30 @@ int get_int_value(char input[], int start, int length) {
 }
 
 /**
+ * Determine the token kind of an identifier (i.e., check for keywords)
+*/
+enum TokenKind get_identifier_kind(char input[], int start, int length) {
+    if (length == 3 && strncmp(input + start, "int", length) == 0)
+        return INT_KEYWORD_TOKEN;
+    if (length == 4 && strncmp(input + start, "char", length) == 0)
+        return CHAR_KEYWORD_TOKEN;
+    if (length == 3 && strncmp(input + start, "asm", length) == 0)
+        return ASM_KEYWORD_TOKEN;
+    if (length == 2 && strncmp(input + start, "if", length) == 0)
+        return IF_KEYWORD_TOKEN;
+    if (length == 4 && strncmp(input + start, "else", length) == 0)
+        return ELSE_KEYWORD_TOKEN;
+    if (length == 3 && strncmp(input + start, "for", length) == 0)
+        return FOR_KEYWORD_TOKEN;
+    if (length == 5 && strncmp(input + start, "while", length) == 0)
+        return WHILE_KEYWORD_TOKEN;
+    if (length == 6 && strncmp(input + start, "return", length) == 0)
+        return RETURN_KEYWORD_TOKEN;
+
+    return IDENTIFIER_TOKEN;
+}
+
+/**
  * Free every token and value in the given linked list
 */
 void free_tokens(struct Token *head) {
@@ -44,6 +67,8 @@ void free_tokens(struct Token *head) {
         current = next;
     }
 }
+
+
 
 /**
  * Parse the char array into a linked chain of tokens.
@@ -62,21 +87,18 @@ struct Token *lex(char input[]) {
     struct Token *cur_token = head;
     struct Token *new_token;
 
-
     int i = 0;
     while (1) {
         // consume spaces
         while (isspace(input[i])) 
             i++;
         
-
         if (input[i] == '\0')
             break;
 
         new_token = malloc(sizeof(struct Token));
         new_token->index = i;
         new_token->next = tail;
-
 
         if (isdigit(input[i])) {
             while (isdigit(input[i])) 
@@ -85,6 +107,13 @@ struct Token *lex(char input[]) {
             new_token->length = i - new_token->index;
             new_token->kind = INT_TOKEN;
             new_token->int_value = get_int_value(input, new_token->index, new_token->length);
+        } else if (isalpha(input[i]) || input[i] == '_') {
+            while (isalpha(input[i]) || isdigit(input[i]) || input[i] == '_') 
+                i++;
+            
+            new_token->length = i - new_token->index;
+            new_token->kind = get_identifier_kind(input, new_token->index, new_token->length);;
+            new_token->string_value = input + new_token->index + 1;
         } else if (input[i] == '"') {
             i++;
             while (input[i] != '\0' && input[i] != '"') 
