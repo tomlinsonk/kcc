@@ -3,9 +3,9 @@
 
 #include <stdio.h>
 
-const char *token_type_names[16];
+extern const char *token_type_names[];
 
-enum TokenType { 
+enum TokenKind { 
     START_TOKEN,
     INT_TOKEN,
     PLUS_TOKEN,
@@ -20,19 +20,22 @@ enum TokenType {
     OPEN_BRACKET_TOKEN,
     CLOSE_BRACKET_TOKEN,
     SEMICOLON_TOKEN,
+    STRING_LITERAL_TOKEN,
     END_TOKEN,
     UNKNOWN_TOKEN
 };
 
 
 struct Token {
-    enum TokenType type;
+    enum TokenKind kind;
     int index;
     int length;
     union {
-        int *int_value;
+        int int_value;
+        char *string_value;
     };
     struct Token *next;
+    int line_num;
 };
 
 void free_tokens(struct Token *head);

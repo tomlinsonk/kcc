@@ -1,6 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
-
+#include "semantics.h"
 
 
 int main() {
@@ -17,14 +17,18 @@ int main() {
 
     struct Token *head = lex(input);
 
-    // print_tokens(input, head);
+    print_tokens(input, head);
 
     struct SyntaxNode *root = parse(head, input);
 
+    typecheck(root);
+
     pretty_print(root);
+
+    printf("Compiled with %i parser errors and %i type errors\n", num_parser_errors, num_type_errors);
     
     free_tree(root);
     free_tokens(head);
 
-    return 0;
+    return num_parser_errors + num_type_errors;
 }

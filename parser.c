@@ -8,16 +8,13 @@
 
 #include "lexer.h"
 #include "parser.h"
+#include "types.h"
 
 
-
-const char *syntax_names[] = {"INT_CONSTANT", "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ERROR"};
-
-
-
+const char *syntax_names[] = {"INT_CONSTANT", "STRING_LITERAL", "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ERROR"};
 
 struct Token *cur_token;
-int num_errors;
+int num_parser_errors;
 char *input;
 
 
@@ -45,27 +42,24 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     printf("%s", syntax_names[root->syntax]);
 
     if (root->syntax == INT_CONSTANT_SYNTAX) {
-        printf(" %i", *root->token->int_value);
+        printf(" %i", root->token->int_value);
     } else if (root->syntax == BINARY_EXPRESSION_SYNTAX || root->syntax == UNARY_EXPRESSION_SYNTAX) {
-        printf(" %s", token_type_names[root->token->type]);
+        printf(" %s", token_type_names[root->token->kind]);
     }
+
+    printf(" ");
+    print_type(root->type);
 
     printf("\n");
 
     char* new_indent = malloc((indent_size + 4) * sizeof(char));
 
-    // printf("%i\n", (int)strlen(indent));
     strcpy(new_indent, indent);
     strcat(new_indent, is_last ? "   " : "│  ");
-    // printf("(%s)\n", new_indent);
-
-    // printf("left: %i = %i\n", (int)strlen(new_indent), indent_size+4);
 
     if (root->left != NULL) {
         pretty_print_helper(root->left, new_indent, indent_size + 4, root->right == NULL);
     }
-
-    // printf("right: %i = %i", (int)strlen(indent), indent_size);
 
     if (root->right != NULL) {
         pretty_print_helper(root->right, new_indent, indent_size + 4, 1);
@@ -83,7 +77,7 @@ void free_tree(struct SyntaxNode *root) {
     }
 }
 
-int get_binary_operator_priority(enum TokenType token_type) {
+int get_binary_operator_priority(enum TokenKind token_type) {
     switch (token_type) {
         case STAR_TOKEN:
         case SLASH_TOKEN:
@@ -101,19 +95,19 @@ int get_binary_operator_priority(enum TokenType token_type) {
 
 
 /**
- * Check that the current token matches the expected type (error otherwise)
+ * Check that the current token matches the expected kind (error otherwise)
  * Also, progress to the next token.
 */
-void match(enum TokenType token_type) {
+void match(enum TokenKind token_type) {
     if (cur_token == NULL) {
-        num_errors++;
+        num_parser_errors++;
         printf(BOLD_RED "Error: expected %s, reached end of file\n" RESET, token_type_names[token_type]);
         return;
     }
 
-    if (cur_token->type != token_type) {
-        num_errors++;
-        printf(BOLD_RED "Error: expected %s, got %s\n" RESET, token_type_names[token_type], token_type_names[cur_token->type]);
+    if (cur_token->kind != token_type) {
+        num_parser_errors++;
+        printf(BOLD_RED "Error: expected %s, got %s\n" RESET, token_type_names[token_type], token_type_names[cur_token->kind]);
     }
 
     cur_token = cur_token->next;
@@ -125,7 +119,7 @@ void match(enum TokenType token_type) {
 
 struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
     cur_token = head;
-    num_errors = 0;
+    num_parser_errors = 0;
     input = input_seq;
 
     match(START_TOKEN);
@@ -149,11 +143,10 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
     struct SyntaxNode *node = parse_unary_expression();
     struct SyntaxNode *new_node;
 
-
     int priority;
 
     while (1) {
-        priority = get_binary_operator_priority(cur_token->type);
+        priority = get_binary_operator_priority(cur_token->kind);
 
         // Only process operators that have higher priority than the parent
         if (priority <= parent_priority)
@@ -176,7 +169,7 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
 struct SyntaxNode *parse_unary_expression() {
     struct SyntaxNode *new_node;
 
-    if (cur_token->type == PLUS_TOKEN || cur_token->type == MINUS_TOKEN) {
+    if (cur_token->kind == PLUS_TOKEN || cur_token->kind == MINUS_TOKEN) {
         new_node = malloc(sizeof(struct SyntaxNode));
         new_node->syntax = UNARY_EXPRESSION_SYNTAX;
         new_node->token = cur_token;
@@ -197,18 +190,21 @@ struct SyntaxNode *parse_primary_expression() {
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
     node->token = cur_token;
 
-    if (cur_token->type == OPEN_PAREN_TOKEN) {
+    if (cur_token->kind == OPEN_PAREN_TOKEN) {
         node->syntax = PARENTHESIZED_EXPRESSION_SYNTAX;
 
         cur_token = cur_token->next;
         node->left = parse_binary_expression(0);
 
         match(CLOSE_PAREN_TOKEN);
-    } else if (cur_token->type == INT_TOKEN) {
+    } else if (cur_token->kind == INT_TOKEN) {
         node->syntax = INT_CONSTANT_SYNTAX;
         cur_token = cur_token->next;
+    } else if (cur_token->kind == STRING_LITERAL_TOKEN) {
+        node->syntax = STRING_LITERAL_SYNTAX;
+        cur_token = cur_token->next;
     } else {
-        num_errors++;
+        num_parser_errors++;
         printf(BOLD_RED "Error: expected primary expression, got ");
         printf("%.*s\n" RESET, cur_token->length, input + cur_token->index);
         node->syntax = ERROR_SYNTAX;
