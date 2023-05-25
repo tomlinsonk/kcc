@@ -12,8 +12,10 @@
  * @param *fp: pointer to file
 */
 int fsize(FILE *fp) {
+    int size;
+    
     fseek(fp, 0, SEEK_END); 
-    int size = ftell(fp);
+    size = ftell(fp);
     rewind(fp);
 
     return size;
@@ -24,7 +26,9 @@ int fsize(FILE *fp) {
 */
 int get_int_value(char input[], int start, int length) {
     int n = 0;
-    for (int i = start; i < start + length; i++) {
+    int i;
+
+    for (i = start; i < start + length; i++) {
         n = 10 * n + (input[i] - '0');
     }
     return n;
@@ -74,19 +78,17 @@ void free_tokens(struct Token *head) {
  * @return a pointer to the first token in the chain
 */
 struct Token *lex(char input[]) {
+    struct Token *head, *tail, *cur_token, *new_token;
+    int i = 0;
 
-    struct Token *head = malloc(sizeof(struct Token));
+    head = malloc(sizeof(struct Token));
+    tail = malloc(sizeof(struct Token));
     head->kind = START_TOKEN;
-
-    struct Token *tail = malloc(sizeof(struct Token));
+    head->next = tail;
     tail->kind = END_TOKEN;
 
-    head->next = tail;
+    cur_token = head;
 
-    struct Token *cur_token = head;
-    struct Token *new_token;
-
-    int i = 0;
     while (1) {
         // consume spaces
         while (isspace(input[i])) 
@@ -98,7 +100,7 @@ struct Token *lex(char input[]) {
         new_token = malloc(sizeof(struct Token));
         new_token->index = i;
         new_token->next = tail;
-{}
+
         if (isdigit(input[i])) {
             // Check for int literal 
             while (isdigit(input[i])) 

@@ -14,17 +14,20 @@
 const char *syntax_names[] = {"INT_CONSTANT", "STRING_LITERAL", "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ERROR"};
 
 struct Token *cur_token;
-int num_parser_errors;
+int num_parser_errors = 0;
 char *input;
 
 
 int get_height(struct SyntaxNode *root) {
+    int left_height;
+    int right_height;
+
     if (root == NULL) {
         return 0;
     }
 
-    int left_height = get_height(root->left);
-    int right_height = get_height(root->right);
+    left_height = get_height(root->left);
+    right_height = get_height(root->right);
 
     return 1 + (left_height > right_height ? left_height : right_height);
 }
@@ -36,6 +39,10 @@ void pretty_print(struct SyntaxNode *root) {
 
 void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size, int is_last) {
     char* marker = is_last ? "└──" : "├──";
+    char* new_indent = malloc((indent_size + 4) * sizeof(char));;
+
+    strcpy(new_indent, indent);
+    strcat(new_indent, is_last ? "   " : "│  ");
 
     printf("%s", indent);
     printf("%s", marker);
@@ -49,13 +56,8 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
 
     printf(" ");
     print_type(root->type);
-
     printf("\n");
 
-    char* new_indent = malloc((indent_size + 4) * sizeof(char));
-
-    strcpy(new_indent, indent);
-    strcat(new_indent, is_last ? "   " : "│  ");
 
     if (root->left != NULL) {
         pretty_print_helper(root->left, new_indent, indent_size + 4, root->right == NULL);
@@ -117,13 +119,15 @@ void match(enum TokenKind token_type) {
 
 
 struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
+    struct SyntaxNode *root;
+
     cur_token = head;
     num_parser_errors = 0;
     input = input_seq;
 
     match(START_TOKEN);
     
-    struct SyntaxNode *root = parse_statement();
+    root = parse_statement();
 
     match(END_TOKEN);
 
@@ -132,17 +136,16 @@ struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
 
 struct SyntaxNode *parse_statement() {
     struct SyntaxNode *node = parse_binary_expression(0);
-
     match(SEMICOLON_TOKEN);
 
     return node;
 }
 
 struct SyntaxNode *parse_binary_expression(int parent_priority) {
-    struct SyntaxNode *node = parse_unary_expression();
-    struct SyntaxNode *new_node;
-
+    struct SyntaxNode *node, *new_node;
     int priority;
+
+    node = parse_unary_expression();
 
     while (1) {
         priority = get_binary_operator_priority(cur_token->kind);
@@ -187,6 +190,7 @@ struct SyntaxNode *parse_unary_expression() {
 
 struct SyntaxNode *parse_primary_expression() {
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+
     node->token = cur_token;
 
     if (cur_token->kind == OPEN_PAREN_TOKEN) {

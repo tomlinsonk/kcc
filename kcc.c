@@ -5,22 +5,23 @@
 
 int main() {
     FILE *fp = fopen("input.txt", "r");
-
     int size = fsize(fp);
-
     char input[size+1];
+    int i;
+    struct Token *head;
+    struct SyntaxNode *root;
 
-    for (int i = 0; i < size; i++) {
+    for (i = 0; i < size; i++) {
         input[i] = getc(fp);
     }
     input[size] = '\0';
 
-    struct Token *head = lex(input);
+    head = lex(input);
 
     printf("\n---- TOKENS ----\n");
     print_tokens(input, head);
 
-    struct SyntaxNode *root = parse(head, input);
+    root = parse(head, input);
 
     typecheck(root);
 
