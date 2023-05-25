@@ -65,7 +65,6 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
         pretty_print_helper(root->right, new_indent, indent_size + 4, 1);
     }
 
-
     free(new_indent);
 }
 
@@ -197,7 +196,7 @@ struct SyntaxNode *parse_primary_expression() {
         node->left = parse_binary_expression(0);
 
         match(CLOSE_PAREN_TOKEN);
-    } else if (cur_token->kind == INT_TOKEN) {
+    } else if (cur_token->kind == INT_LITERAL_TOKEN) {
         node->syntax = INT_CONSTANT_SYNTAX;
         cur_token = cur_token->next;
     } else if (cur_token->kind == STRING_LITERAL_TOKEN) {

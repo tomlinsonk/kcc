@@ -4,19 +4,66 @@
 #include <stdio.h>
 
 static const char *token_type_names[] = {
-    "START", "INT", "+", "-", "*", "/", "%", "(", ")", "{", "}", "[", "]", ";", "STRING", 
+    "INT", "STRING", 
+    "+", "-", "*", "/", "%", 
+    "~", "|", "&", "^", ">>", "<<",
+    "!", "||", "&&",
+    "==", "!=", ">", "<", ">=", "<=",
+    "=", "*=", "/=", "%=", "+=", "-=", ">>=", "<<=", "&=", "^=", "|=",
+    "(", ")", "{", "}", "[", "]", ";", 
     "IDENTIFIER", "INT_KEYWORD", "CHAR_KEYWORD", "ASM_KEYWORD", "IF_KEYWORD", "ELSE_KEYWORD", "WHILE_KEYWORD", "FOR_KEYWORD", "RETURN_KEYWORD",  
-    "END", "UNKNOWN"
+    "START", "END", "UNKNOWN"
 };
 
+
+
 enum TokenKind { 
-    START_TOKEN,
-    INT_TOKEN,
+    // Literals
+    INT_LITERAL_TOKEN,
+    STRING_LITERAL_TOKEN,
+
+    // Arithmetic operators
     PLUS_TOKEN,
     MINUS_TOKEN,
     STAR_TOKEN,
     SLASH_TOKEN,
     PERCENT_TOKEN,
+
+    // Bitwise operators
+    TILDE_TOKEN,
+    PIPE_TOKEN,
+    AMPERSAND_TOKEN,
+    CARET_TOKEN,
+    DOUBLE_GREATER_TOKEN,
+    DOUBLE_LESS_TOKEN,
+
+    // Logical operators
+    BANG_TOKEN,
+    DOUBLE_PIPE_TOKEN,
+    DOUBLE_AMPERSAND_TOKEN,
+
+    // Comparison operators
+    DOUBLE_EQUALS_TOKEN,
+    BANG_EQUALS_TOKEN,
+    GREATER_TOKEN,
+    LESS_TOKEN,
+    GREATER_EQUALS_TOKEN,
+    LESS_EQUALS_TOKEN,
+
+    // Assignment operators
+    EQUALS_TOKEN, 
+    STAR_EQUALS_TOKEN,
+    SLASH_EQUALS_TOKEN,
+    PERCENT_EQUALS_TOKEN,
+    PLUS_EQUALS_TOKEN,
+    MINUS_EQUALS_TOKEN,
+    DOUBLE_GREATER_EQUALS_TOKEN,
+    DOUBLE_LESS_EQUALS_TOKEN,
+    AMPERSAND_EQUALS_TOKEN,
+    CARET_EQUALS_TOKEN,
+    PIPE_EQUALS_TOKEN,
+
+    // Syntax tokens
     OPEN_PAREN_TOKEN,
     CLOSE_PAREN_TOKEN,
     OPEN_BRACE_TOKEN,
@@ -24,7 +71,8 @@ enum TokenKind {
     OPEN_BRACKET_TOKEN,
     CLOSE_BRACKET_TOKEN,
     SEMICOLON_TOKEN,
-    STRING_LITERAL_TOKEN,
+
+    // Identifiers and keywords
     IDENTIFIER_TOKEN,
     INT_KEYWORD_TOKEN,
     CHAR_KEYWORD_TOKEN,
@@ -34,6 +82,9 @@ enum TokenKind {
     WHILE_KEYWORD_TOKEN,
     FOR_KEYWORD_TOKEN,
     RETURN_KEYWORD_TOKEN,
+
+    // Other
+    START_TOKEN,
     END_TOKEN,
     UNKNOWN_TOKEN
 };
