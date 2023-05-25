@@ -26,7 +26,7 @@ void typecheck(struct SyntaxNode *root) {
     case INT_CONSTANT_SYNTAX:
         root->type = &INT_TYPE;
         break;
-    case STRING_LITERAL_SYNTAX:
+    case STRING_SYNTAX:
         root->type = &CHAR_ARRAY_TYPE;
         break;
     case PARENTHESIZED_EXPRESSION_SYNTAX:
@@ -62,17 +62,17 @@ void typecheck_binary_expression(struct SyntaxNode *root) {
 }
 
 void typecheck_unary_expression(struct SyntaxNode *root) {
-    typecheck(root->left);
+    typecheck(root->child);
 
-    root->type = root->left->type;
+    root->type = root->child->type;
 
-    if (types_match(root->left->type, &INT_TYPE)) {
+    if (types_match(root->child->type, &INT_TYPE)) {
         root->type = &INT_TYPE;
     } else {
         root->type = &ERROR_TYPE;
         
         printf(BOLD_RED "Error: unary operator %s is not applicable to type ",  token_type_names[root->token->kind]);
-        print_type(root->left->type);
+        print_type(root->child->type);
         printf("\n" RESET);
 
         num_type_errors++;

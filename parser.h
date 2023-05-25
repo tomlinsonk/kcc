@@ -5,27 +5,48 @@
 
 
 
-extern const char *syntax_names[];
+static const char *syntax_names[] = {
+    "INT_CONSTANT", "STRING", "IDENTIFIER", 
+    "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", 
+    "EXPRESSION_STATEMENT", "COMPOUND_STATEMENT", "STATEMENT_LIST", 
+    "ERROR"
+};
+
 extern int num_parser_errors;
 
 
-enum SyntaxType {
+enum SyntaxKind {
     INT_CONSTANT_SYNTAX,
-    STRING_LITERAL_SYNTAX,
+    STRING_SYNTAX,
+    IDENTIFIER_SYNTAX,
+
     UNARY_EXPRESSION_SYNTAX,
     BINARY_EXPRESSION_SYNTAX,
     PARENTHESIZED_EXPRESSION_SYNTAX,
+
+    EXPRESSION_STATEMENT_SYNTAX,
+    COMPOUND_STATEMENT_SYNTAX,
+    STATEMENT_LIST_SYNTAX,
+
     ERROR_SYNTAX
 };
 
 
 
 struct SyntaxNode {
+    enum SyntaxKind syntax;
     struct Token *token;
-    struct SyntaxNode *left;
-    struct SyntaxNode *right;
-    enum SyntaxType syntax;
     struct Type *type;
+    union {
+        struct SyntaxNode *left;
+        struct SyntaxNode *child;
+        struct SyntaxNode *first_child;
+    };
+    union {
+        struct SyntaxNode *right;
+        struct SyntaxNode *last_child;
+    };
+    struct SyntaxNode *next;
 };
 
 void pretty_print(struct SyntaxNode *root);
@@ -36,7 +57,11 @@ void free_tree(struct SyntaxNode *root);
 
 struct SyntaxNode *parse(struct Token *head, char input_seq[]);
 
-struct SyntaxNode *parse_statement();
+struct SyntaxNode *parse_compound_statement();
+
+struct SyntaxNode *parse_statement_list();
+
+struct SyntaxNode *parse_expression_statement();
 
 struct SyntaxNode *parse_binary_expression(int priority);
 

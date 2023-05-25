@@ -11,7 +11,6 @@
 #include "types.h"
 
 
-const char *syntax_names[] = {"INT_CONSTANT", "STRING_LITERAL", "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ERROR"};
 
 struct Token *cur_token;
 int num_parser_errors = 0;
@@ -40,6 +39,7 @@ void pretty_print(struct SyntaxNode *root) {
 void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size, int is_last) {
     char* marker = is_last ? "└──" : "├──";
     char* new_indent = malloc((indent_size + 4) * sizeof(char));;
+    struct SyntaxNode *cur_child;
 
     strcpy(new_indent, indent);
     strcat(new_indent, is_last ? "   " : "│  ");
@@ -58,13 +58,20 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     print_type(root->type);
     printf("\n");
 
+    if (root->syntax == STATEMENT_LIST_SYNTAX) {
+        cur_child = root->first_child;
+        while (cur_child != NULL) {
+            pretty_print_helper(cur_child, new_indent, indent_size + 4, cur_child->next == NULL);
+            cur_child = cur_child->next;
+        }
+    } else {
+        if (root->left != NULL) {
+            pretty_print_helper(root->left, new_indent, indent_size + 4, root->right == NULL);
+        }
 
-    if (root->left != NULL) {
-        pretty_print_helper(root->left, new_indent, indent_size + 4, root->right == NULL);
-    }
-
-    if (root->right != NULL) {
-        pretty_print_helper(root->right, new_indent, indent_size + 4, 1);
+        if (root->right != NULL) {
+            pretty_print_helper(root->right, new_indent, indent_size + 4, 1);
+        }
     }
 
     free(new_indent);
@@ -91,6 +98,21 @@ int get_binary_operator_priority(enum TokenKind token_type) {
     }
 
     return 0;
+}
+
+
+enum SyntaxKind get_primary_expression_kind(enum TokenKind token_kind) {
+    switch (token_kind)
+    {
+    case INT_CONSTANT_TOKEN:
+        return INT_CONSTANT_SYNTAX;
+    case STRING_TOKEN:
+        return STRING_SYNTAX;
+    case IDENTIFIER_TOKEN:
+        return IDENTIFIER_SYNTAX;
+    default:
+        return ERROR_SYNTAX;
+    }
 }
 
 
@@ -127,15 +149,50 @@ struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
 
     match(START_TOKEN);
     
-    root = parse_statement();
+    root = parse_compound_statement();
 
     match(END_TOKEN);
 
     return root;
 }
 
-struct SyntaxNode *parse_statement() {
-    struct SyntaxNode *node = parse_binary_expression(0);
+
+struct SyntaxNode *parse_compound_statement() {
+    struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+
+    match(OPEN_BRACE_TOKEN);
+    node->syntax = COMPOUND_STATEMENT_SYNTAX;
+    node->child = parse_statement_list();
+    match(CLOSE_BRACE_TOKEN);
+
+    return node;
+}
+
+
+
+struct SyntaxNode *parse_statement_list() {
+    struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+    struct SyntaxNode *cur_child;
+
+    node->syntax = STATEMENT_LIST_SYNTAX;
+
+    node->first_child = parse_expression_statement();
+    node->last_child = node->first_child;
+
+    while (cur_token->kind != CLOSE_BRACE_TOKEN) {
+        node->last_child->next = parse_expression_statement();
+        node->last_child = node->last_child->next;
+    }
+
+    return node;
+}
+
+
+struct SyntaxNode *parse_expression_statement() {
+    struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+
+    node->syntax = EXPRESSION_STATEMENT_SYNTAX;
+    node->child = parse_binary_expression(0);
     match(SEMICOLON_TOKEN);
 
     return node;
@@ -177,7 +234,7 @@ struct SyntaxNode *parse_unary_expression() {
         new_node->token = cur_token;
 
         cur_token = cur_token->next;
-        new_node->left = parse_primary_expression();
+        new_node->child = parse_primary_expression();
     } else {
         new_node = parse_primary_expression();
     }
@@ -197,20 +254,18 @@ struct SyntaxNode *parse_primary_expression() {
         node->syntax = PARENTHESIZED_EXPRESSION_SYNTAX;
 
         cur_token = cur_token->next;
-        node->left = parse_binary_expression(0);
+        node->child = parse_binary_expression(0);
 
         match(CLOSE_PAREN_TOKEN);
-    } else if (cur_token->kind == INT_LITERAL_TOKEN) {
-        node->syntax = INT_CONSTANT_SYNTAX;
-        cur_token = cur_token->next;
-    } else if (cur_token->kind == STRING_LITERAL_TOKEN) {
-        node->syntax = STRING_LITERAL_SYNTAX;
-        cur_token = cur_token->next;
     } else {
-        num_parser_errors++;
-        printf(BOLD_RED "Error: expected primary expression, got ");
-        printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);
-        node->syntax = ERROR_SYNTAX;
+        node->syntax = get_primary_expression_kind(cur_token->kind);
+
+        if (node->syntax == ERROR_SYNTAX) {
+            num_parser_errors++;
+            printf(BOLD_RED "Error: expected primary expression, got ");
+            printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);
+        }
+
         cur_token = cur_token->next;
     }
 

@@ -19,8 +19,8 @@ static const char *token_type_names[] = {
 
 enum TokenKind { 
     // Literals
-    INT_LITERAL_TOKEN,
-    STRING_LITERAL_TOKEN,
+    INT_CONSTANT_TOKEN,
+    STRING_TOKEN,
 
     // Arithmetic operators
     PLUS_TOKEN,
