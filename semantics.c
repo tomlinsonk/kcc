@@ -16,6 +16,8 @@ int num_type_errors = 0;
 
 
 void typecheck(struct SyntaxNode *root) {
+    struct SyntaxNode *cur_node;
+
     switch (root->syntax){
     case BINARY_EXPRESSION_SYNTAX:
         typecheck_binary_expression(root);
@@ -29,10 +31,26 @@ void typecheck(struct SyntaxNode *root) {
     case STRING_SYNTAX:
         root->type = &CHAR_ARRAY_TYPE;
         break;
-    case PARENTHESIZED_EXPRESSION_SYNTAX:
-        typecheck(root->left);
-        root->type = root->left->type;
+    case IDENTIFIER_SYNTAX:
+        // TEMPORARY: TODO: symbol tables
+        root->type = &INT_IDENTIFIER_TYPE;
         break;
+    case PARENTHESIZED_EXPRESSION_SYNTAX:
+        typecheck(root->first_child);
+        root->type = root->first_child->type;
+        break;
+    case STATEMENT_LIST_SYNTAX:
+        root->type = &VOID_TYPE;
+        cur_node = root->first_child;
+        while (cur_node != NULL) {
+            typecheck(cur_node);
+            cur_node = cur_node->next;
+        }
+        break;
+    case COMPOUND_STATEMENT_SYNTAX:
+    case EXPRESSION_STATEMENT_SYNTAX:
+        root->type = &VOID_TYPE;
+        typecheck(root->first_child);
     default:
         root->type = &VOID_TYPE;
         break;
@@ -41,20 +59,21 @@ void typecheck(struct SyntaxNode *root) {
 
 
 void typecheck_binary_expression(struct SyntaxNode *root) {
-    typecheck(root->left);
-    typecheck(root->right);
+    typecheck(root->first_child);
+    typecheck(root->last_child);
 
-    root->type = root->left->type;
+    root->type = root->first_child->type;
 
-    if (types_match(root->left->type, root->right->type)) {
-        root->type = root->left->type;
+    // TODO: method to check if binary operator is applicable to types
+    if (types_match(root->first_child->type, root->last_child->type)) {
+        root->type = root->first_child->type;
     } else {
         root->type = &ERROR_TYPE;
 
         printf(BOLD_RED "Error: binary operator %s is not applicable to types ",  token_type_names[root->token->kind]);
-        print_type(root->left->type);
+        print_type(root->first_child->type);
         printf(" and ");
-        print_type(root->right->type);
+        print_type(root->last_child->type);
         printf("\n" RESET);
 
         num_type_errors++;
@@ -62,17 +81,18 @@ void typecheck_binary_expression(struct SyntaxNode *root) {
 }
 
 void typecheck_unary_expression(struct SyntaxNode *root) {
-    typecheck(root->child);
+    typecheck(root->first_child);
 
-    root->type = root->child->type;
+    root->type = root->first_child->type;
 
-    if (types_match(root->child->type, &INT_TYPE)) {
+    // TODO: method to check if unary operator is applicable to type
+    if (types_match(root->first_child->type, &INT_TYPE)) {
         root->type = &INT_TYPE;
     } else {
         root->type = &ERROR_TYPE;
         
         printf(BOLD_RED "Error: unary operator %s is not applicable to type ",  token_type_names[root->token->kind]);
-        print_type(root->child->type);
+        print_type(root->first_child->type);
         printf("\n" RESET);
 
         num_type_errors++;

@@ -116,7 +116,7 @@ struct Token *lex(char input[]) {
             
             new_token->length = i - new_token->index;
             new_token->kind = get_identifier_kind(input, new_token->index, new_token->length);;
-            new_token->string_value = input + new_token->index + 1;
+            new_token->string_value = input + new_token->index;
         } else if (input[i] == '"') {
             // Check for string literal
             i++;

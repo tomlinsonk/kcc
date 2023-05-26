@@ -2,6 +2,7 @@
 #define PARSER
 
 #include "types.h"
+#include "lexer.h"
 
 
 
@@ -37,15 +38,8 @@ struct SyntaxNode {
     enum SyntaxKind syntax;
     struct Token *token;
     struct Type *type;
-    union {
-        struct SyntaxNode *left;
-        struct SyntaxNode *child;
-        struct SyntaxNode *first_child;
-    };
-    union {
-        struct SyntaxNode *right;
-        struct SyntaxNode *last_child;
-    };
+    struct SyntaxNode *first_child;
+    struct SyntaxNode *last_child;
     struct SyntaxNode *next;
 };
 
@@ -54,6 +48,8 @@ void pretty_print(struct SyntaxNode *root);
 void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size, int is_last);
 
 void free_tree(struct SyntaxNode *root);
+
+int is_assignment_operator(enum TokenKind token_type);
 
 struct SyntaxNode *parse(struct Token *head, char input_seq[]);
 

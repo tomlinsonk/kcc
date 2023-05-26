@@ -17,20 +17,6 @@ int num_parser_errors = 0;
 char *input;
 
 
-int get_height(struct SyntaxNode *root) {
-    int left_height;
-    int right_height;
-
-    if (root == NULL) {
-        return 0;
-    }
-
-    left_height = get_height(root->left);
-    right_height = get_height(root->right);
-
-    return 1 + (left_height > right_height ? left_height : right_height);
-}
-
 void pretty_print(struct SyntaxNode *root) {
     char* indent = "";
     pretty_print_helper(root, indent, 0, 1);
@@ -52,35 +38,34 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
         printf(" %i", root->token->int_value);
     } else if (root->syntax == BINARY_EXPRESSION_SYNTAX || root->syntax == UNARY_EXPRESSION_SYNTAX) {
         printf(" %s", token_type_names[root->token->kind]);
+    } else if (root->syntax == IDENTIFIER_SYNTAX) {
+        printf(" %.*s" , root->token->length, root->token->string_value);
     }
 
     printf(" ");
     print_type(root->type);
     printf("\n");
 
-    if (root->syntax == STATEMENT_LIST_SYNTAX) {
-        cur_child = root->first_child;
-        while (cur_child != NULL) {
-            pretty_print_helper(cur_child, new_indent, indent_size + 4, cur_child->next == NULL);
-            cur_child = cur_child->next;
-        }
-    } else {
-        if (root->left != NULL) {
-            pretty_print_helper(root->left, new_indent, indent_size + 4, root->right == NULL);
-        }
-
-        if (root->right != NULL) {
-            pretty_print_helper(root->right, new_indent, indent_size + 4, 1);
-        }
+    cur_child = root->first_child;
+    while (cur_child != NULL) {
+        pretty_print_helper(cur_child, new_indent, indent_size + 4, cur_child->next == NULL);
+        cur_child = cur_child->next;
     }
 
     free(new_indent);
 }
 
 void free_tree(struct SyntaxNode *root) {
+    struct SyntaxNode *cur_node, *next_node;
+
     if (root != NULL) {
-        free_tree(root->left);
-        free_tree(root->right);
+        cur_node = root->first_child;
+        while (cur_node != NULL) {
+            next_node = cur_node->next;
+            free_tree(cur_node);
+            cur_node = next_node;
+        }
+
         free(root);
     }
 }
@@ -89,15 +74,38 @@ int get_binary_operator_priority(enum TokenKind token_type) {
     switch (token_type) {
         case STAR_TOKEN:
         case SLASH_TOKEN:
-            return 2;
+            return 3;
         case PLUS_TOKEN:
         case MINUS_TOKEN:
-            return 1;
+            return 2;
         default:
             break;
     }
 
+    if (is_assignment_operator(token_type)) {
+        return 1;
+    }
+
     return 0;
+}
+
+int is_assignment_operator(enum TokenKind token_type) {
+    switch (token_type) {
+    case EQUALS_TOKEN:
+    case STAR_EQUALS_TOKEN:
+    case SLASH_EQUALS_TOKEN:
+    case PERCENT_EQUALS_TOKEN:
+    case PLUS_EQUALS_TOKEN:
+    case MINUS_EQUALS_TOKEN:
+    case DOUBLE_LESS_EQUALS_TOKEN:
+    case DOUBLE_GREATER_EQUALS_TOKEN:
+    case AMPERSAND_EQUALS_TOKEN:
+    case CARET_EQUALS_TOKEN:
+    case PIPE_EQUALS_TOKEN:
+        return 1;
+    default:
+        return 0;
+    }
 }
 
 
@@ -162,7 +170,8 @@ struct SyntaxNode *parse_compound_statement() {
 
     match(OPEN_BRACE_TOKEN);
     node->syntax = COMPOUND_STATEMENT_SYNTAX;
-    node->child = parse_statement_list();
+    node->first_child = parse_statement_list();
+    node->last_child = node->first_child;
     match(CLOSE_BRACE_TOKEN);
 
     return node;
@@ -192,7 +201,8 @@ struct SyntaxNode *parse_expression_statement() {
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
 
     node->syntax = EXPRESSION_STATEMENT_SYNTAX;
-    node->child = parse_binary_expression(0);
+    node->first_child = parse_binary_expression(0);
+    node->last_child = node->first_child;
     match(SEMICOLON_TOKEN);
 
     return node;
@@ -211,13 +221,18 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
         if (priority <= parent_priority)
             break;
 
+        // Make assignmnet group right-to-left by pretending the parent priority is lower
+        if (is_assignment_operator(cur_token->kind))
+            priority--;
+
         new_node = malloc(sizeof(struct SyntaxNode));
-        new_node->left = node;
+        new_node->first_child = node;
         new_node->token = cur_token;
         new_node->syntax = BINARY_EXPRESSION_SYNTAX;
 
         cur_token = cur_token->next;
-        new_node->right = parse_binary_expression(priority);
+        new_node->last_child = parse_binary_expression(priority);
+        new_node->first_child->next = new_node->last_child;
 
         node = new_node;
     }
@@ -234,7 +249,8 @@ struct SyntaxNode *parse_unary_expression() {
         new_node->token = cur_token;
 
         cur_token = cur_token->next;
-        new_node->child = parse_primary_expression();
+        new_node->first_child = parse_primary_expression();
+        new_node->last_child = new_node->first_child;
     } else {
         new_node = parse_primary_expression();
     }
@@ -254,7 +270,8 @@ struct SyntaxNode *parse_primary_expression() {
         node->syntax = PARENTHESIZED_EXPRESSION_SYNTAX;
 
         cur_token = cur_token->next;
-        node->child = parse_binary_expression(0);
+        node->first_child = parse_binary_expression(0);
+        node->last_child = node->first_child;
 
         match(CLOSE_PAREN_TOKEN);
     } else {

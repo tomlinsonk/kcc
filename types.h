@@ -26,14 +26,19 @@ struct Type {
         struct Type *of_type;
         struct Type *return_type;
     };
+    int lvalue;
 };
 
-static struct Type INT_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_PRIMITIVE};
-static struct Type CHAR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=CHAR_PRIMITIVE};
-static struct Type VOID_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=VOID_PRIMITIVE};
-static struct Type ERROR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=ERROR_PRIMITIVE};
+static struct Type INT_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_PRIMITIVE, .lvalue=0};
+static struct Type CHAR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=CHAR_PRIMITIVE, .lvalue=0};
+static struct Type VOID_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=VOID_PRIMITIVE, .lvalue=0};
+static struct Type ERROR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=ERROR_PRIMITIVE, .lvalue=0};
 
-static struct Type CHAR_ARRAY_TYPE = {.kind=ARRAY_TYPE, .of_type=&CHAR_TYPE};
+static struct Type CHAR_ARRAY_TYPE = {.kind=ARRAY_TYPE, .of_type=&CHAR_TYPE, .lvalue=0};
+
+// TEMPORARY
+static struct Type INT_IDENTIFIER_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_PRIMITIVE, .lvalue=1};
+
 
 void print_type(struct Type *type);
 
