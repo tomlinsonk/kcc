@@ -19,6 +19,9 @@ void typecheck(struct SyntaxNode *root) {
     struct SyntaxNode *cur_node;
 
     switch (root->syntax){
+    case ASSIGNMENT_EXPRESSION_SYNTAX:
+        typecheck_assignment_expression(root);
+        break;
     case BINARY_EXPRESSION_SYNTAX:
         typecheck_binary_expression(root);
         break;
@@ -80,14 +83,37 @@ void typecheck_binary_expression(struct SyntaxNode *root) {
     }
 }
 
+void typecheck_assignment_expression(struct SyntaxNode *root) {
+    typecheck(root->first_child);
+    typecheck(root->last_child);
+
+    if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
+        printf(BOLD_RED "Error: can only assign to identifier, not %s\n" RESET,  syntax_names[root->first_child->syntax]);
+        num_type_errors++;
+    }
+
+    // TODO: method to check if assignment operator is applicable
+    if (types_match(root->first_child->type, root->last_child->type)) {
+        root->type = root->first_child->type;
+    } else {
+        root->type = &ERROR_TYPE;
+
+        printf(BOLD_RED "Error: assignment operator %s is not applicable to types ",  token_type_names[root->token->kind]);
+        print_type(root->first_child->type);
+        printf(" and ");
+        print_type(root->last_child->type);
+        printf("\n" RESET);
+
+        num_type_errors++;
+    }
+}
+
 void typecheck_unary_expression(struct SyntaxNode *root) {
     typecheck(root->first_child);
 
-    root->type = root->first_child->type;
-
     // TODO: method to check if unary operator is applicable to type
     if (types_match(root->first_child->type, &INT_TYPE)) {
-        root->type = &INT_TYPE;
+        root->type = root->first_child->type;
     } else {
         root->type = &ERROR_TYPE;
         

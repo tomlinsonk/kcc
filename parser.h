@@ -8,7 +8,7 @@
 
 static const char *syntax_names[] = {
     "INT_CONSTANT", "STRING", "IDENTIFIER", 
-    "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", 
+    "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ASSIGNMENT_EXPRESSION",
     "EXPRESSION_STATEMENT", "COMPOUND_STATEMENT", "STATEMENT_LIST", 
     "ERROR"
 };
@@ -24,6 +24,7 @@ enum SyntaxKind {
     UNARY_EXPRESSION_SYNTAX,
     BINARY_EXPRESSION_SYNTAX,
     PARENTHESIZED_EXPRESSION_SYNTAX,
+    ASSIGNMENT_EXPRESSION_SYNTAX,
 
     EXPRESSION_STATEMENT_SYNTAX,
     COMPOUND_STATEMENT_SYNTAX,
@@ -59,12 +60,16 @@ struct SyntaxNode *parse_statement_list();
 
 struct SyntaxNode *parse_expression_statement();
 
+
+struct SyntaxNode *parse_expression();
+
+struct SyntaxNode *parse_assignment_expression();
+
 struct SyntaxNode *parse_binary_expression(int priority);
 
 struct SyntaxNode *parse_unary_expression();
 
 struct SyntaxNode *parse_primary_expression();
-
 
 
 

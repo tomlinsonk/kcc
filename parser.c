@@ -34,12 +34,20 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     printf("%s", marker);
     printf("%s", syntax_names[root->syntax]);
 
-    if (root->syntax == INT_CONSTANT_SYNTAX) {
+    switch (root->syntax) {
+    case INT_CONSTANT_SYNTAX:
         printf(" %i", root->token->int_value);
-    } else if (root->syntax == BINARY_EXPRESSION_SYNTAX || root->syntax == UNARY_EXPRESSION_SYNTAX) {
+        break;
+    case BINARY_EXPRESSION_SYNTAX:
+    case UNARY_EXPRESSION_SYNTAX:
+    case ASSIGNMENT_EXPRESSION_SYNTAX:
         printf(" %s", token_type_names[root->token->kind]);
-    } else if (root->syntax == IDENTIFIER_SYNTAX) {
+        break;
+    case IDENTIFIER_SYNTAX:
         printf(" %.*s" , root->token->length, root->token->string_value);
+        break;
+    default:
+        break;
     }
 
     printf(" ");
@@ -74,16 +82,34 @@ int get_binary_operator_priority(enum TokenKind token_type) {
     switch (token_type) {
         case STAR_TOKEN:
         case SLASH_TOKEN:
-            return 3;
+        case PERCENT_TOKEN:
+            return 10;
         case PLUS_TOKEN:
         case MINUS_TOKEN:
+            return 9;
+        case DOUBLE_LESS_TOKEN:
+        case DOUBLE_GREATER_TOKEN:
+            return 8;
+        case LESS_TOKEN:
+        case LESS_EQUALS_TOKEN:
+        case GREATER_TOKEN:
+        case GREATER_EQUALS_TOKEN:
+            return 7;
+        case DOUBLE_EQUALS_TOKEN:
+        case BANG_EQUALS_TOKEN:
+            return 6;
+        case AMPERSAND_TOKEN:
+            return 5;
+        case CARET_TOKEN:
+            return 4;
+        case PIPE_TOKEN:
+            return 3;
+        case DOUBLE_AMPERSAND_TOKEN:
             return 2;
+        case DOUBLE_PIPE_TOKEN:
+            return 1;
         default:
             break;
-    }
-
-    if (is_assignment_operator(token_type)) {
-        return 1;
     }
 
     return 0;
@@ -146,8 +172,6 @@ void match(enum TokenKind token_type) {
 
 
 
-
-
 struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
     struct SyntaxNode *root;
 
@@ -201,12 +225,40 @@ struct SyntaxNode *parse_expression_statement() {
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
 
     node->syntax = EXPRESSION_STATEMENT_SYNTAX;
-    node->first_child = parse_binary_expression(0);
+    node->first_child = parse_assignment_expression();
     node->last_child = node->first_child;
     match(SEMICOLON_TOKEN);
 
     return node;
 }
+
+
+struct SyntaxNode *parse_expression() {
+    return parse_assignment_expression();
+}
+
+
+struct SyntaxNode *parse_assignment_expression() {
+    struct SyntaxNode *node, *new_node;
+
+    node = parse_binary_expression(0);
+
+    if (is_assignment_operator(cur_token->kind)) {
+        new_node = malloc(sizeof(struct SyntaxNode));
+        new_node->first_child = node;
+        new_node->syntax = ASSIGNMENT_EXPRESSION_SYNTAX;
+        new_node->token = cur_token;
+
+        cur_token = cur_token->next;
+        new_node->last_child = parse_assignment_expression();
+        new_node->first_child->next = new_node->last_child;
+
+        node = new_node;
+    }
+
+    return node;
+}
+
 
 struct SyntaxNode *parse_binary_expression(int parent_priority) {
     struct SyntaxNode *node, *new_node;
@@ -220,10 +272,6 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
         // Only process operators that have higher priority than the parent
         if (priority <= parent_priority)
             break;
-
-        // Make assignmnet group right-to-left by pretending the parent priority is lower
-        if (is_assignment_operator(cur_token->kind))
-            priority--;
 
         new_node = malloc(sizeof(struct SyntaxNode));
         new_node->first_child = node;
@@ -270,7 +318,7 @@ struct SyntaxNode *parse_primary_expression() {
         node->syntax = PARENTHESIZED_EXPRESSION_SYNTAX;
 
         cur_token = cur_token->next;
-        node->first_child = parse_binary_expression(0);
+        node->first_child = parse_expression();
         node->last_child = node->first_child;
 
         match(CLOSE_PAREN_TOKEN);
