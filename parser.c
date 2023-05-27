@@ -41,9 +41,11 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     case BINARY_EXPRESSION_SYNTAX:
     case UNARY_EXPRESSION_SYNTAX:
     case ASSIGNMENT_EXPRESSION_SYNTAX:
+    case DECLARATION_SPECIFIER_SYNTAX:
         printf(" %s", token_type_names[root->token->kind]);
         break;
     case IDENTIFIER_SYNTAX:
+    case DECLARATOR_SYNTAX:
         printf(" %.*s" , root->token->length, root->token->string_value);
         break;
     default:
@@ -115,8 +117,11 @@ int get_binary_operator_priority(enum TokenKind token_type) {
     return 0;
 }
 
-int is_assignment_operator(enum TokenKind token_type) {
-    switch (token_type) {
+int is_assignment_operator(struct Token *token) {
+    if (token == NULL) 
+        return 0;
+
+    switch (token->kind) {
     case EQUALS_TOKEN:
     case STAR_EQUALS_TOKEN:
     case SLASH_EQUALS_TOKEN:
@@ -130,6 +135,19 @@ int is_assignment_operator(enum TokenKind token_type) {
     case PIPE_EQUALS_TOKEN:
         return 1;
     default:
+        return 0;
+    }
+}
+
+int is_declaration_specifier(struct Token *token) {
+    // if (token == NULL) 
+    //     return 0;
+
+    switch (token->kind) {
+    case INT_KEYWORD_TOKEN:
+    case CHAR_KEYWORD_TOKEN:
+        return 1;
+    default:    
         return 0;
     }
 }
@@ -165,12 +183,10 @@ void match(enum TokenKind token_type) {
     if (cur_token->kind != token_type) {
         num_parser_errors++;
         printf(BOLD_RED "Error: expected %s, got %s\n" RESET, token_type_names[token_type], token_type_names[cur_token->kind]);
+    } else {
+        cur_token = cur_token->next;
     }
-
-    cur_token = cur_token->next;
 }
-
-
 
 struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
     struct SyntaxNode *root;
@@ -191,17 +207,106 @@ struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
 
 struct SyntaxNode *parse_compound_statement() {
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+    struct SyntaxNode *cur_child;
 
     match(OPEN_BRACE_TOKEN);
     node->syntax = COMPOUND_STATEMENT_SYNTAX;
-    node->first_child = parse_statement_list();
-    node->last_child = node->first_child;
+
+    if (is_declaration_specifier(cur_token)) {
+        node->first_child = parse_declaration_list();
+        node->last_child = node->first_child;
+    }
+
+    if (cur_token != NULL && cur_token->kind != CLOSE_BRACE_TOKEN && cur_token->kind != END_TOKEN) {
+        cur_child = parse_statement_list();
+        if (node->first_child == NULL) {
+            node->first_child = cur_child;
+            node->last_child = cur_child;
+        } else {
+            node->last_child->next = cur_child;
+            node->last_child = cur_child;
+        }
+    }
+    
     match(CLOSE_BRACE_TOKEN);
 
     return node;
 }
 
+struct SyntaxNode *parse_declaration_list() {
+    struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+    struct SyntaxNode *cur_child;
 
+    node->syntax = DECLARATION_LIST_SYNTAX;
+
+    node->first_child = parse_declaration();
+    node->last_child = node->first_child;
+
+    while (is_declaration_specifier(cur_token)) {
+        node->last_child->next = parse_declaration();
+        node->last_child = node->last_child->next;
+    }
+
+    return node;
+}
+
+struct SyntaxNode *parse_declaration() {
+    // Declaration = declaration specifier (type), optional* declarator (identifier + operators), [optional initializer]
+
+    struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+    struct SyntaxNode *cur_child;
+
+    node->syntax = DECLARATION_SYNTAX;
+    node->first_child = parse_declaration_specifier();
+    node->last_child = node->first_child;
+
+    cur_child = parse_declarator();
+    node->last_child->next = cur_child;
+    node->last_child = cur_child;
+
+    match(SEMICOLON_TOKEN);
+
+    return node;
+}
+
+struct SyntaxNode *parse_declaration_specifier() {
+    // TODO: process sequences of declaration specifiers (like const, struct, enum, ...)
+    struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+
+    if (is_declaration_specifier(cur_token)) {
+        node->syntax = DECLARATION_SPECIFIER_SYNTAX;
+        node->token = cur_token;
+
+        cur_token = cur_token->next;
+    } else {
+        node->syntax = ERROR_SYNTAX;
+        num_parser_errors++;
+        printf(BOLD_RED "Error: expected declaration specifier, got ");
+        printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);
+    }
+
+    return node;
+}
+
+struct SyntaxNode *parse_declarator() {
+    // TODO: process more complex declarators (like *x, x[], ...)
+    struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
+
+    if (cur_token->kind == IDENTIFIER_TOKEN) {
+        node->syntax = DECLARATOR_SYNTAX;
+        node->token = cur_token;
+
+        cur_token = cur_token->next;
+    } else {
+        node->syntax = ERROR_SYNTAX;
+        num_parser_errors++;
+        printf(BOLD_RED "Error: expected identifier, got ");
+        printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);
+    }
+
+    return node;
+
+}
 
 struct SyntaxNode *parse_statement_list() {
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
@@ -212,14 +317,13 @@ struct SyntaxNode *parse_statement_list() {
     node->first_child = parse_expression_statement();
     node->last_child = node->first_child;
 
-    while (cur_token->kind != CLOSE_BRACE_TOKEN) {
+    while (cur_token != NULL && cur_token->kind != CLOSE_BRACE_TOKEN && cur_token->kind != END_TOKEN) {
         node->last_child->next = parse_expression_statement();
         node->last_child = node->last_child->next;
     }
 
     return node;
 }
-
 
 struct SyntaxNode *parse_expression_statement() {
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
@@ -243,7 +347,7 @@ struct SyntaxNode *parse_assignment_expression() {
 
     node = parse_binary_expression(0);
 
-    if (is_assignment_operator(cur_token->kind)) {
+    if (is_assignment_operator(cur_token)) {
         new_node = malloc(sizeof(struct SyntaxNode));
         new_node->first_child = node;
         new_node->syntax = ASSIGNMENT_EXPRESSION_SYNTAX;
@@ -266,7 +370,7 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
 
     node = parse_unary_expression();
 
-    while (1) {
+    while (cur_token != NULL) {
         priority = get_binary_operator_priority(cur_token->kind);
 
         // Only process operators that have higher priority than the parent

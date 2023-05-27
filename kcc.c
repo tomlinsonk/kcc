@@ -4,6 +4,7 @@
 
 
 int main() {
+    setvbuf(stdout, NULL, _IONBF, 0);    
     FILE *fp = fopen("input.txt", "r");
     int size = fsize(fp);
     char input[size+1];
@@ -18,8 +19,8 @@ int main() {
 
     head = lex(input);
 
-    printf("\n---- TOKENS ----\n");
-    print_tokens(input, head);
+    // printf("\n---- TOKENS ----\n");
+    // print_tokens(input, head);
 
     root = parse(head, input);
 

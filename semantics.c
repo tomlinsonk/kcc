@@ -42,7 +42,11 @@ void typecheck(struct SyntaxNode *root) {
         typecheck(root->first_child);
         root->type = root->first_child->type;
         break;
+    case DECLARATION_SYNTAX:
+    // TODO: typecheck declarations
+    case DECLARATION_LIST_SYNTAX:
     case STATEMENT_LIST_SYNTAX:
+    case COMPOUND_STATEMENT_SYNTAX:
         root->type = &VOID_TYPE;
         cur_node = root->first_child;
         while (cur_node != NULL) {
@@ -50,7 +54,6 @@ void typecheck(struct SyntaxNode *root) {
             cur_node = cur_node->next;
         }
         break;
-    case COMPOUND_STATEMENT_SYNTAX:
     case EXPRESSION_STATEMENT_SYNTAX:
         root->type = &VOID_TYPE;
         typecheck(root->first_child);
