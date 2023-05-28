@@ -86,6 +86,7 @@ struct Token *lex(char input[]) {
     head->kind = START_TOKEN;
     head->next = tail;
     tail->kind = END_TOKEN;
+    tail->next = NULL;
 
     cur_token = head;
 
@@ -111,7 +112,7 @@ struct Token *lex(char input[]) {
             new_token->int_value = get_int_value(input, new_token->index, new_token->length);
         } else if (isalpha(input[i]) || input[i] == '_') {
             // Check for identifier
-            while (isalpha(input[i]) || isdigit(input[i]) || input[i] == '_') 
+            while (isalnum(input[i]) || input[i] == '_') 
                 i++;
             
             new_token->length = i - new_token->index;

@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "semantics.h"
+#include "symbols.h"
 
 
 int main() {
@@ -19,6 +20,8 @@ int main() {
 
     head = lex(input);
 
+    
+
     // printf("\n---- TOKENS ----\n");
     // print_tokens(input, head);
 
@@ -33,6 +36,8 @@ int main() {
     
     free_tree(root);
     free_tokens(head);
+
+    new_symbol_table();
 
     return num_parser_errors + num_type_errors;
 }

@@ -28,11 +28,11 @@ if __name__ == '__main__':
 
         os.system('clear')
 
-        with subprocess.Popen('./kcc', stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True) as p:
-            p.wait()
+        with subprocess.Popen('./kcc', stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True) as p:
             for line in p.stdout:
                 print(line, end='')
 
+            p.wait()
             if p.returncode == -signal.SIGSEGV:
                 print('😳 segfault') 
             elif p.returncode != 0:
