@@ -1,3 +1,10 @@
+/**
+ * @file parser.h
+ * @author Kiran Tomlinson
+ * @date 29 May 2023
+ * @brief Header: provides SyntaxNode, SyntaxKind, and related declarations
+ */
+
 #ifndef PARSER
 #define PARSER
 
@@ -57,6 +64,7 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
 void free_tree(struct SyntaxNode *root);
 
 int is_assignment_operator(struct Token *token);
+
 int is_declaration_specifier(struct Token *token);
 
 struct SyntaxNode *parse(struct Token *head, char input_seq[]);
@@ -69,17 +77,12 @@ struct SyntaxNode *parse_declaration_specifier();
 struct SyntaxNode *parse_declarator();
 
 struct SyntaxNode *parse_statement_list();
-
 struct SyntaxNode *parse_expression_statement();
 
 struct SyntaxNode *parse_expression();
-
 struct SyntaxNode *parse_assignment_expression();
-
 struct SyntaxNode *parse_binary_expression(int priority);
-
 struct SyntaxNode *parse_unary_expression();
-
 struct SyntaxNode *parse_primary_expression();
 
 

@@ -1,3 +1,13 @@
+/**
+ * @file semantics.c
+ * @author Kiran Tomlinson
+ * @date 28 May 2023
+ * @brief Checks a syntax tree for sematic correctness (e.g., typechecking)  
+ * 
+ * This file provides functions to typecheck a syntax tree. Eventually, will 
+ * also check symbol definitions and scopes. 
+ */
+
 #define BOLD_RED    "\033[1m\033[31m"
 #define RESET       "\033[0m"
 
@@ -6,7 +16,6 @@
 #include <ctype.h>
 #include <string.h>
 
-
 #include "semantics.h"
 #include "parser.h"
 #include "lexer.h"
@@ -14,7 +23,11 @@
 
 int num_type_errors = 0;
 
-
+/**
+ * Recursively typecheck a syntax tree. Annotates the nodes with their types.
+ * Also logs the number of type errors encountered in num_type_errors
+ * @param root a pointer to the root node of the tree to typecheck
+ */
 void typecheck(struct SyntaxNode *root) {
     struct SyntaxNode *cur_node;
 
@@ -63,7 +76,10 @@ void typecheck(struct SyntaxNode *root) {
     }
 }
 
-
+/**
+ * Verify that a binary expression operates on valid types
+ * @param root a pointer to the binary expression node  
+ */
 void typecheck_binary_expression(struct SyntaxNode *root) {
     typecheck(root->first_child);
     typecheck(root->last_child);
@@ -76,7 +92,7 @@ void typecheck_binary_expression(struct SyntaxNode *root) {
     } else {
         root->type = &ERROR_TYPE;
 
-        printf(BOLD_RED "Error: binary operator %s is not applicable to types ",  token_type_names[root->token->kind]);
+        printf(BOLD_RED "Error: binary operator %s is not applicable to types ",  token_kind_names[root->token->kind]);
         print_type(root->first_child->type);
         printf(" and ");
         print_type(root->last_child->type);
@@ -86,6 +102,10 @@ void typecheck_binary_expression(struct SyntaxNode *root) {
     }
 }
 
+/**
+ * Verify that an assignment expression has valid types
+ * @param root a pointer to the assignment expression node  
+ */
 void typecheck_assignment_expression(struct SyntaxNode *root) {
     typecheck(root->first_child);
     typecheck(root->last_child);
@@ -101,7 +121,7 @@ void typecheck_assignment_expression(struct SyntaxNode *root) {
     } else {
         root->type = &ERROR_TYPE;
 
-        printf(BOLD_RED "Error: assignment operator %s is not applicable to types ",  token_type_names[root->token->kind]);
+        printf(BOLD_RED "Error: assignment operator %s is not applicable to types ",  token_kind_names[root->token->kind]);
         print_type(root->first_child->type);
         printf(" and ");
         print_type(root->last_child->type);
@@ -111,6 +131,10 @@ void typecheck_assignment_expression(struct SyntaxNode *root) {
     }
 }
 
+/**
+ * Verify that a unary expression has a valid type
+ * @param root a pointer to the unary expression node  
+ */
 void typecheck_unary_expression(struct SyntaxNode *root) {
     typecheck(root->first_child);
 
@@ -120,7 +144,7 @@ void typecheck_unary_expression(struct SyntaxNode *root) {
     } else {
         root->type = &ERROR_TYPE;
         
-        printf(BOLD_RED "Error: unary operator %s is not applicable to type ",  token_type_names[root->token->kind]);
+        printf(BOLD_RED "Error: unary operator %s is not applicable to type ",  token_kind_names[root->token->kind]);
         print_type(root->first_child->type);
         printf("\n" RESET);
 

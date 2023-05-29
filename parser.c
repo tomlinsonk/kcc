@@ -1,3 +1,14 @@
+/**
+ * @file parser.c
+ * @author Kiran Tomlinson
+ * @date 28 May 2023
+ * @brief Syntax tree parsing  
+ * 
+ * This file provides the functions needed to go from a list of tokens to a full syntax tree.
+ * Uses a recursive descent parser.
+ */
+
+
 #define BOLD_RED    "\033[1m\033[31m"
 #define RESET       "\033[0m"
 
@@ -10,18 +21,27 @@
 #include "parser.h"
 #include "types.h"
 
-
-
 struct Token *cur_token;
 int num_parser_errors = 0;
 char *input;
 
-
+ 
+/**
+ * Print a syntax tree *beautifully*
+ * @param root the root node of the tree to print
+ */
 void pretty_print(struct SyntaxNode *root) {
     char* indent = "";
     pretty_print_helper(root, indent, 0, 1);
 }
 
+/**
+ * Recursive helper method for pretty_print
+ * @param root the root node of the subtree to print
+ * @param indent the current string to print before root
+ * @param indent_size the current length of the indent string
+ * @param is_last true if this node is that last child of its parent
+ */
 void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size, int is_last) {
     char* marker = is_last ? "└──" : "├──";
     char* new_indent = malloc((indent_size + 4) * sizeof(char));;
@@ -42,7 +62,7 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     case UNARY_EXPRESSION_SYNTAX:
     case ASSIGNMENT_EXPRESSION_SYNTAX:
     case DECLARATION_SPECIFIER_SYNTAX:
-        printf(" %s", token_type_names[root->token->kind]);
+        printf(" %s", token_kind_names[root->token->kind]);
         break;
     case IDENTIFIER_SYNTAX:
     case DECLARATOR_SYNTAX:
@@ -65,6 +85,10 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     free(new_indent);
 }
 
+/**
+ * Recursively free a syntax tree
+ * @param root the root node of the syntax subtree to tree
+ */
 void free_tree(struct SyntaxNode *root) {
     struct SyntaxNode *cur_node, *next_node;
 
@@ -80,6 +104,9 @@ void free_tree(struct SyntaxNode *root) {
     }
 }
 
+/**
+ *  
+ */
 int get_binary_operator_priority(enum TokenKind token_kind) {
     switch (token_kind) {
         case STAR_TOKEN:
@@ -195,13 +222,13 @@ void add_syntax_child(struct SyntaxNode *parent, struct SyntaxNode *child) {
 void match(enum TokenKind token_kind) {
     if (cur_token == NULL) {
         num_parser_errors++;
-        printf(BOLD_RED "Error: expected %s, reached end of file\n" RESET, token_type_names[token_kind]);
+        printf(BOLD_RED "Error: expected %s, reached end of file\n" RESET, token_kind_names[token_kind]);
         return;
     }
 
     if (cur_token->kind != token_kind) {
         num_parser_errors++;
-        printf(BOLD_RED "Error: expected %s, got %s\n" RESET, token_type_names[token_kind], token_type_names[cur_token->kind]);
+        printf(BOLD_RED "Error: expected %s, got %s\n" RESET, token_kind_names[token_kind], token_kind_names[cur_token->kind]);
     }
 
     cur_token = cur_token->next;

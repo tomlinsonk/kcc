@@ -1,3 +1,14 @@
+/**
+ * @file types.c
+ * @author Kiran Tomlinson
+ * @date 28 May 2023
+ * @brief Provides type representations and functions  
+ * 
+ * This file provides an implementation of types, type comparisons, and 
+ * helper methods (like printing). Compound types like arrays of pointer to
+ * char are represented as a linked chain of Type nodes. 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>

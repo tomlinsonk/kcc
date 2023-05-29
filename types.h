@@ -1,3 +1,10 @@
+/**
+ * @file types.h
+ * @author Kiran Tomlinson
+ * @date 29 May 2023
+ * @brief Header: provides Type, related enums, static types and related declarations 
+ */
+
 #ifndef TYPES
 #define TYPES
 

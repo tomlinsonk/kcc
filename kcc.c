@@ -1,9 +1,23 @@
+/**
+ * @file kcc.c
+ * @author Kiran Tomlinson
+ * @date 28 May 2023
+ * @brief Entry point for the KiT C Compiler
+ * 
+ * This file contains the main method for kcc, which initiates
+ * lexing, parsing, and typechecking.
+ */
+
 #include "lexer.h"
 #include "parser.h"
 #include "semantics.h"
 #include "symbols.h"
 
 
+/**
+ * Compile a C program into 6502 assebly (eventually)
+ * @return a status code indicating the number of errors that occurred (0 = success) 
+ */
 int main() {
     setvbuf(stdout, NULL, _IONBF, 0);    
     FILE *fp = fopen("input.txt", "r");
@@ -20,7 +34,6 @@ int main() {
 
     head = lex(input);
 
-    
 
     // printf("\n---- TOKENS ----\n");
     // print_tokens(input, head);

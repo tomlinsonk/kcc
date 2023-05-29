@@ -1,2 +1,8 @@
 .vscode
 .DS_Store
+docs/
+*.plist
+*.dSYM
+todo
+input.txt
+kcc

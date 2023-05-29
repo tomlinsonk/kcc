@@ -1,9 +1,16 @@
+/**
+ * @file lexer.h
+ * @author Kiran Tomlinson
+ * @date 28 May 2023
+ * @brief Header: provides Token, TokenKind, and related declarations 
+ */
+
 #ifndef LEXER
 #define LEXER
 
 #include <stdio.h>
 
-static const char *token_type_names[] = {
+static const char *token_kind_names[] = {
     "INT", "STRING", 
     "+", "-", "*", "/", "%", 
     "~", "|", "&", "^", ">>", "<<",
@@ -14,8 +21,6 @@ static const char *token_type_names[] = {
     "IDENTIFIER", "INT_KEYWORD", "CHAR_KEYWORD", "ASM_KEYWORD", "IF_KEYWORD", "ELSE_KEYWORD", "WHILE_KEYWORD", "FOR_KEYWORD", "RETURN_KEYWORD",  
     "START", "END", "UNKNOWN"
 };
-
-
 
 enum TokenKind { 
     // Literals
@@ -88,7 +93,6 @@ enum TokenKind {
     END_TOKEN,
     UNKNOWN_TOKEN
 };
-
 
 struct Token {
     enum TokenKind kind;

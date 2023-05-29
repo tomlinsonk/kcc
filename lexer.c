@@ -1,3 +1,13 @@
+/**
+ * @file lexer.c
+ * @author Kiran Tomlinson
+ * @date 28 May 2023
+ * @brief Converts source file into a list of tokens 
+ * 
+ * This file provides functions to read a source file and construct a list
+ * of tokens for the parser.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -7,10 +17,11 @@
 
 
 
-/**
+/** 
  * Return the size of a file
  * @param *fp: pointer to file
-*/
+ * @return the number of characters in the file
+ */
 int fsize(FILE *fp) {
     int size;
     
@@ -22,8 +33,12 @@ int fsize(FILE *fp) {
 }
 
 /**
- * Parse an int value from a subarray of input, return a pointer to int
-*/
+ * Parse an int value from a subarray of input
+ * @param char input[] the input text
+ * @param start the index of the first character to parse in input
+ * @param length the number of digits in the int
+ * @return the integer value represented in input[start, ..., start + length - 1]
+ */
 int get_int_value(char input[], int start, int length) {
     int n = 0;
     int i;
@@ -36,7 +51,12 @@ int get_int_value(char input[], int start, int length) {
 
 /**
  * Determine the token kind of an identifier (i.e., check for keywords)
-*/
+ * If not a keyword, then it's an identifier
+ * @param char input[] the input text
+ * @param start the index of the first character to parse in input
+ * @param length the number of characters in the identifier
+ * @return the token kind
+ */
 enum TokenKind get_identifier_kind(char input[], int start, int length) {
     if (length == 3 && strncmp(input + start, "int", length) == 0)
         return INT_KEYWORD_TOKEN;
@@ -60,7 +80,8 @@ enum TokenKind get_identifier_kind(char input[], int start, int length) {
 
 /**
  * Free every token and value in the given linked list
-*/
+ * @param head a pointer to the first node in the chain 
+ */
 void free_tokens(struct Token *head) {
     struct Token *current = head;
     struct Token *next = head->next;
@@ -74,7 +95,7 @@ void free_tokens(struct Token *head) {
 
 
 /**
- * Parse the char array into a linked chain of tokens.
+ * Parse the char array into a linked chain of tokens
  * @return a pointer to the first token in the chain
 */
 struct Token *lex(char input[]) {
@@ -91,7 +112,7 @@ struct Token *lex(char input[]) {
     cur_token = head;
 
     while (1) {
-        // consume spaces
+        /* consume spaces */
         while (isspace(input[i])) 
             i++;
         
@@ -103,7 +124,7 @@ struct Token *lex(char input[]) {
         new_token->next = tail;
 
         if (isdigit(input[i])) {
-            // Check for int literal 
+            /* Check for int literal */ 
             while (isdigit(input[i])) 
                 i++;
             
@@ -111,7 +132,7 @@ struct Token *lex(char input[]) {
             new_token->kind = INT_CONSTANT_TOKEN;
             new_token->int_value = get_int_value(input, new_token->index, new_token->length);
         } else if (isalpha(input[i]) || input[i] == '_') {
-            // Check for identifier
+            /* Check for identifier */
             while (isalnum(input[i]) || input[i] == '_') 
                 i++;
             
@@ -119,7 +140,7 @@ struct Token *lex(char input[]) {
             new_token->kind = get_identifier_kind(input, new_token->index, new_token->length);;
             new_token->string_value = input + new_token->index;
         } else if (input[i] == '"') {
-            // Check for string literal
+            /* Check for string literal */
             i++;
             while (input[i] != '\0' && input[i] != '"') 
                 i++;
@@ -131,7 +152,7 @@ struct Token *lex(char input[]) {
             new_token->kind = STRING_TOKEN;
             new_token->string_value = input + new_token->index + 1;
         } else if (input[i] == '>' && input[i+1] == '>') {
-            // Check for >> and >>=
+            /* Check for >> and >>= */
             if (input[i+2] == '=') {
                 new_token->length = 3;
                 new_token->kind = DOUBLE_GREATER_EQUALS_TOKEN;
@@ -141,7 +162,7 @@ struct Token *lex(char input[]) {
             }
             i += new_token->length;
         } else if (input[i] == '<' && input[i+1] == '<') {
-            // Check for << and <<=
+            /* Check for << and <<= */
             if (input[i+2] == '=') {
                 new_token->length = 3;
                 new_token->kind = DOUBLE_LESS_EQUALS_TOKEN;
@@ -159,7 +180,7 @@ struct Token *lex(char input[]) {
             new_token->kind = DOUBLE_AMPERSAND_TOKEN;
             i += 2;
         } else if (strchr("=!><*/%+-&^|", input[i]) != NULL) {
-            // Check for bitwise and arithmetic operators and their assignment operators
+            /* Check for bitwise and arithmetic operators and their assignment operators */
             if (input[i+1] == '=') {
                 new_token->length = 2;
                 switch (input[i]) {
@@ -243,7 +264,7 @@ struct Token *lex(char input[]) {
             }
             i += new_token->length;
         } else if (strchr("(){}[];", input[i]) != NULL) {
-            // Check for syntax tokens
+            /* Check for syntax tokens */
             new_token->length = 1;
 
             switch (input[i]) {
@@ -284,11 +305,16 @@ struct Token *lex(char input[]) {
     return head;
 }
 
-void print_tokens(char input[], struct Token *current) {
-    while (current != NULL) {
-        printf("%s ", token_type_names[current->kind]);
-        printf("%.*s\n", current->length, input + current->index);
-        current = current->next;
+/**
+ * Print out a list of tokens, and the source text each corresponds to
+ * @param input the source text
+ * @param head a pointer to the first token in the chain 
+ */
+void print_tokens(char input[], struct Token *head) {
+    while (head != NULL) {
+        printf("%s ", token_kind_names[head->kind]);
+        printf("%.*s\n", head->length, input + head->index);
+        head = head->next;
     }
 }
 

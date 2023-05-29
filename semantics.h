@@ -1,3 +1,10 @@
+/**
+ * @file parser.h
+ * @author Kiran Tomlinson
+ * @date 29 May 2023
+ * @brief Header: provides declarations for typechecking functions
+ */
+
 #ifndef SEMANTICS
 #define SEMANTICS   
 
