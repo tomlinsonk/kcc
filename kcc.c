@@ -53,7 +53,7 @@ int main() {
     
     free_tree(root);
     free_tokens(head);
-    free_symbol_table(table);
+    free_symbol_table(symbol_table);
 
 
     return num_parser_errors + num_type_errors;
