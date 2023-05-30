@@ -19,13 +19,16 @@
  * @return a status code indicating the number of errors that occurred (0 = success) 
  */
 int main() {
-    setvbuf(stdout, NULL, _IONBF, 0);    
     FILE *fp = fopen("input.txt", "r");
     int size = fsize(fp);
     char input[size+1];
     int i;
     struct Token *head;
     struct SyntaxNode *root;
+    struct SymbolTable *symbol_table;
+
+    setvbuf(stdout, NULL, _IONBF, 0);    
+
 
     for (i = 0; i < size; i++) {
         input[i] = getc(fp);
@@ -34,11 +37,12 @@ int main() {
 
     head = lex(input);
 
-
     // printf("\n---- TOKENS ----\n");
     // print_tokens(input, head);
 
     root = parse(head, input);
+
+    symbol_table = new_symbol_table();
 
     typecheck(root);
 
@@ -49,8 +53,8 @@ int main() {
     
     free_tree(root);
     free_tokens(head);
+    free_symbol_table(table);
 
-    new_symbol_table();
 
     return num_parser_errors + num_type_errors;
 }
