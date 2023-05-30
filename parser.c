@@ -105,10 +105,13 @@ void free_tree(struct SyntaxNode *root) {
 }
 
 /**
- *  
+ * Find the priority level of a binary operator (e.g., +-&%...). Higher priority
+ * means it binds more tightly. Non-binary operators have priority 0
+ * @param token the binary operator
+ * @return the integer priority level
  */
-int get_binary_operator_priority(enum TokenKind token_kind) {
-    switch (token_kind) {
+int get_binary_operator_priority(struct Token *token) {
+    switch (token->kind) {
         case STAR_TOKEN:
         case SLASH_TOKEN:
         case PERCENT_TOKEN:
@@ -144,6 +147,12 @@ int get_binary_operator_priority(enum TokenKind token_kind) {
     return 0;
 }
 
+
+/**
+ * Check if a token represents an assignment operator (=, *=, ^=, ...)
+ * @param token the token to check
+ * @return 1 if it's an assignment operator, 0 if not
+ */
 int is_assignment_operator(struct Token *token) {
     if (token == NULL) 
         return 0;
@@ -166,6 +175,10 @@ int is_assignment_operator(struct Token *token) {
     }
 }
 
+/**
+ * Check if a token represent a declaration specifier (for now, only type keyword).
+ * Eventually, other declaration specifiers include static, const, extern, ... 
+ */
 int is_declaration_specifier(struct Token *token) {
     if (token == NULL) 
         return 0;
@@ -179,6 +192,12 @@ int is_declaration_specifier(struct Token *token) {
     }
 }
 
+/**
+ * Check for what kind of primary expression starts with the given token.
+ * Could be constant, identifier, or parenthesised expression
+ * @param token the token to check
+ * @return the kind of primary expression, or ERROR_SYNTAX if not a primary expression
+ */
 enum SyntaxKind get_primary_expression_kind(struct Token *token) {
     switch (token->kind) {
     case OPEN_PAREN_TOKEN:
@@ -194,7 +213,13 @@ enum SyntaxKind get_primary_expression_kind(struct Token *token) {
     }
 }
 
-
+/**
+ * Allocate a new SyntaxNode and initialize it with null children and the
+ * given fields. 
+ * @param syntax the kind of the new node
+ * @param token the token of the new node (or null if it has no token)
+ * @return a pointer to the new node
+ */
 struct SyntaxNode *new_syntax_node(enum SyntaxKind syntax, struct Token *token) {
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
     node->syntax = syntax;
@@ -205,6 +230,11 @@ struct SyntaxNode *new_syntax_node(enum SyntaxKind syntax, struct Token *token) 
     return node;
 }
 
+/**
+ * Add a child to the given SyntaxNode at the end of its child linked list
+ * @param parent a pointer to the node under which to add
+ * @param child a pointer to the child node to add
+ */
 void add_syntax_child(struct SyntaxNode *parent, struct SyntaxNode *child) {
     if (parent->first_child == NULL){
         parent->first_child = parent->last_child = child;
@@ -216,8 +246,9 @@ void add_syntax_child(struct SyntaxNode *parent, struct SyntaxNode *child) {
 
 
 /**
- * Check that the current token matches the expected kind (error otherwise)
+ * Check that the current token matches the expected kind (log error otherwise)
  * Also, progress to the next token.
+ * @param token_kind the expected token kind
 */
 void match(enum TokenKind token_kind) {
     if (cur_token == NULL) {
@@ -234,6 +265,14 @@ void match(enum TokenKind token_kind) {
     cur_token = cur_token->next;
 }
 
+/**
+ * Construct a syntax tree starting from the given token.
+ * Any errors encountered are printed to stdout and logged in
+ * num_parser_errors
+ * @param head the first token in the linked linked to parse
+ * @param input_seq the source text
+ * @return a pointer to the root of the resulting syntax tree 
+ */
 struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
     struct SyntaxNode *root;
 
@@ -250,7 +289,10 @@ struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
     return root;
 }
 
-
+/**
+ * Parse a compound statement of the form {[declaration list] [statement list]}
+ * @return a pointer to the compound statement node
+ */
 struct SyntaxNode *parse_compound_statement() {
     struct SyntaxNode *node = new_syntax_node(COMPOUND_STATEMENT_SYNTAX, NULL);
 
@@ -267,6 +309,10 @@ struct SyntaxNode *parse_compound_statement() {
     return node;
 }
 
+/**
+ * Parse a declaration list (one or more declarations)
+ * @return a pointer to the declaration list node 
+ */
 struct SyntaxNode *parse_declaration_list() {
     struct SyntaxNode *node = new_syntax_node(DECLARATION_LIST_SYNTAX, NULL);
 
@@ -277,6 +323,12 @@ struct SyntaxNode *parse_declaration_list() {
     return node;
 }
 
+
+/**
+ * Parse a declaration of the form [declaration specifier] [declarator];
+ * TODO: parse initializers too
+ * @return a pointer to the declaration node 
+ */
 struct SyntaxNode *parse_declaration() {
     struct SyntaxNode *node = new_syntax_node(DECLARATION_SYNTAX, NULL);
 
@@ -287,7 +339,11 @@ struct SyntaxNode *parse_declaration() {
     return node;
 }
 
-// TODO: process sequences of declaration specifiers (like const, struct, enum, ...)
+/**
+ * Parse a declaration specifier (currently just int or char)
+ * TODO: process sequences of declaration specifiers (like const, struct, enum, ...)
+ * @return a pointer to the declaration specifier node
+*/
 struct SyntaxNode *parse_declaration_specifier() {
     struct SyntaxNode *node = new_syntax_node(DECLARATION_SPECIFIER_SYNTAX, cur_token);
 
@@ -304,7 +360,11 @@ struct SyntaxNode *parse_declaration_specifier() {
     return node;
 }
 
-// TODO: process more complex declarators (like *x, x[], ...)
+/**
+ * Parse a declarator (currently just an identifier)
+ * TODO: process more complex declarators (like *x, x[], ...)
+ * @return a pointer to the declarator node
+ */
 struct SyntaxNode *parse_declarator() {
     struct SyntaxNode *node = new_syntax_node(DECLARATOR_SYNTAX, cur_token);
 
@@ -322,6 +382,10 @@ struct SyntaxNode *parse_declarator() {
 
 }
 
+/**
+ * Parse a list of one or more statements
+ * @return a pointer to the statement list node 
+*/
 struct SyntaxNode *parse_statement_list() {
     struct SyntaxNode *node = new_syntax_node(STATEMENT_LIST_SYNTAX, NULL);
 
@@ -332,6 +396,10 @@ struct SyntaxNode *parse_statement_list() {
     return node;
 }
 
+/**
+ * Parse a statement of the form [expression];
+ * @return a pointer to the expression statement node
+ */
 struct SyntaxNode *parse_expression_statement() {
     struct SyntaxNode *node = new_syntax_node(EXPRESSION_STATEMENT_SYNTAX, NULL);
     add_syntax_child(node, parse_expression());
@@ -341,11 +409,21 @@ struct SyntaxNode *parse_expression_statement() {
 }
 
 
+/**
+ * Parse an expression (delegates to the loosest-binding type, assignment expression)
+ * @return a pointer to the expression node
+ */
 struct SyntaxNode *parse_expression() {
     return parse_assignment_expression();
 }
 
-
+/**
+ * Try parsing an assignmnet expression of the form [expression] [assignmnet operator] = [expression]
+ * For a valid assignment expression, the LHS has to be a unary expression, but we can catch that in
+ * typechecking when we're checking that the LHS is an lvalue. This implementation allows us to fall 
+ * through to binary expression if there is no assignment operator
+ * @return a pointer to the expression node
+ */
 struct SyntaxNode *parse_assignment_expression() {
     struct SyntaxNode *node, *new_node;
 
@@ -365,6 +443,13 @@ struct SyntaxNode *parse_assignment_expression() {
 }
 
 
+/**
+ * Try parsing a binary expression. Fall through to unary expression if there is no operator.
+ * Handles priority by consuming all operators of higher priority before returning to the caller.
+ * If we encounter a lower priority operator, break and return to the parent to handle it
+ * @param parent_priority the priority level of the caller's binary operator
+ * @return a pointer to root node of the expression subtree
+ */
 struct SyntaxNode *parse_binary_expression(int parent_priority) {
     struct SyntaxNode *node, *new_node;
     int priority;
@@ -372,7 +457,7 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
     node = parse_unary_expression();
 
     while (cur_token != NULL) {
-        priority = get_binary_operator_priority(cur_token->kind);
+        priority = get_binary_operator_priority(cur_token);
 
         // Only process operators that have higher priority than the parent
         if (priority <= parent_priority)
@@ -389,6 +474,10 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
     return node;
 }
 
+/**
+ * Parse a primary expression with zero or more unary operators
+ * @return a pointer to the expression node
+ */
 struct SyntaxNode *parse_unary_expression() {
     struct SyntaxNode *node;
 
@@ -404,7 +493,12 @@ struct SyntaxNode *parse_unary_expression() {
 }
 
 
-
+/**
+ * Parse a primary expression (identifier, constant, parenthesized expression).
+ * Sets the node's syntax to ERROR_SYNTAX if the next
+ * token is not valid for a primary expression and logs the error
+ * @return a pointer to the primary expression node
+ */
 struct SyntaxNode *parse_primary_expression() {
     struct SyntaxNode *node = new_syntax_node(get_primary_expression_kind(cur_token), cur_token);
 
