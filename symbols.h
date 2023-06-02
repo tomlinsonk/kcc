@@ -44,7 +44,7 @@ struct Symbol *get_symbol(struct SymbolTable *table, char *symbol_name);
 
 void free_symbol_table(struct SymbolTable *table);
 
-struct SymbolTable *new_subscope(struct SymbolTable *parent);
+struct SymbolTable *new_subtable(struct SymbolTable *parent);
 
 
 #endif

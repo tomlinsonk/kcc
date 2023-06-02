@@ -17,6 +17,11 @@
 #include "types.h"
 
 
+/**
+ * Print a type nicely, recursively; for instance:
+ * function returning pointer to array of char
+ * @param type a pointer to the type to print
+ */
 void print_type(struct Type *type) {
     if (type == NULL) {
         printf("null");
@@ -44,6 +49,12 @@ void print_type(struct Type *type) {
     }
 }
 
+/**
+ * Check if two types are the same, recursively
+ * @param t1 pointer to first type
+ * @param t2 pointer to second type
+ * @return 1 if t1 matches t2, 0 otherwise
+ */
 int types_match(struct Type *t1, struct Type *t2) {
     if (t1 == t2)
         return 1;

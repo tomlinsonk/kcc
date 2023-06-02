@@ -20,26 +20,75 @@
 #include "parser.h"
 #include "lexer.h"
 #include "types.h"
+#include "symbols.h"
 
 int num_type_errors = 0;
+
+
+/**
+ * Determine the type of a declaration specifier
+ * @param node the declaration specifier node
+ * @return a pointer to the type corresponding to the declaration specifier
+ */
+struct Type *get_declaration_specifier_type(struct SyntaxNode *node) {
+    if (node != NULL) {
+        switch (node->token->kind) {
+        case INT_KEYWORD_TOKEN:
+            return &INT_TYPE;    
+        case CHAR_KEYWORD_TOKEN:
+            return &CHAR_TYPE;
+        default:
+            break;
+        }
+    }
+
+    return &ERROR_TYPE;
+}
+
+
+/**
+ * Copy a identifier's string name into a new string.
+ * Returns null if the syntax node doesn't contain an identifier
+ * @param node the node whose token is an identifier
+ * @return a pointer to a new string storing the token's name, or null
+ */
+char *copy_identifier_name(struct SyntaxNode *node) {
+    char *new_string = NULL;
+    int i;
+
+    if (node != NULL && node->syntax == DECLARATOR_SYNTAX && node->token->kind == IDENTIFIER_TOKEN) {
+        new_string = malloc((node->token->length + 1) * sizeof(char));
+
+        // Copy identifier name into new string, add null terminator
+        for (i = 0; i < node->token->length; i++) {
+            new_string[i] = node->token->string_value[i];
+        }
+        new_string[i] = '\0';
+    }
+
+    return new_string;
+}
+
+
 
 /**
  * Recursively typecheck a syntax tree. Annotates the nodes with their types.
  * Also logs the number of type errors encountered in num_type_errors
  * @param root a pointer to the root node of the tree to typecheck
+ * @param symbol_table a pointer to the current scope's symbol table
  */
-void typecheck(struct SyntaxNode *root) {
+void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     struct SyntaxNode *cur_node;
 
     switch (root->syntax){
     case ASSIGNMENT_EXPRESSION_SYNTAX:
-        typecheck_assignment_expression(root);
+        typecheck_assignment_expression(root, symbol_table);
         break;
     case BINARY_EXPRESSION_SYNTAX:
-        typecheck_binary_expression(root);
+        typecheck_binary_expression(root, symbol_table);
         break;
     case UNARY_EXPRESSION_SYNTAX:
-        typecheck_unary_expression(root);
+        typecheck_unary_expression(root, symbol_table);
         break;
     case INT_CONSTANT_SYNTAX:
         root->type = &INT_TYPE;
@@ -52,24 +101,25 @@ void typecheck(struct SyntaxNode *root) {
         root->type = &INT_IDENTIFIER_TYPE;
         break;
     case PARENTHESIZED_EXPRESSION_SYNTAX:
-        typecheck(root->first_child);
+        typecheck(root->first_child, symbol_table);
         root->type = root->first_child->type;
         break;
     case DECLARATION_SYNTAX:
-    // TODO: typecheck declarations
+        bind_declaration(root->first_child, root->last_child, symbol_table);
+        break;
     case DECLARATION_LIST_SYNTAX:
     case STATEMENT_LIST_SYNTAX:
     case COMPOUND_STATEMENT_SYNTAX:
         root->type = &VOID_TYPE;
         cur_node = root->first_child;
         while (cur_node != NULL) {
-            typecheck(cur_node);
+            typecheck(cur_node, symbol_table);
             cur_node = cur_node->next;
         }
         break;
     case EXPRESSION_STATEMENT_SYNTAX:
         root->type = &VOID_TYPE;
-        typecheck(root->first_child);
+        typecheck(root->first_child, symbol_table);
     default:
         root->type = &VOID_TYPE;
         break;
@@ -79,10 +129,11 @@ void typecheck(struct SyntaxNode *root) {
 /**
  * Verify that a binary expression operates on valid types
  * @param root a pointer to the binary expression node  
+ * @param symbol_table a pointer to the current scope's symbol table
  */
-void typecheck_binary_expression(struct SyntaxNode *root) {
-    typecheck(root->first_child);
-    typecheck(root->last_child);
+void typecheck_binary_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
+    typecheck(root->first_child, symbol_table);
+    typecheck(root->last_child, symbol_table);
 
     root->type = root->first_child->type;
 
@@ -104,11 +155,12 @@ void typecheck_binary_expression(struct SyntaxNode *root) {
 
 /**
  * Verify that an assignment expression has valid types
- * @param root a pointer to the assignment expression node  
+ * @param root a pointer to the assignment expression node 
+ * @param symbol_table a pointer to the current scope's symbol table
  */
-void typecheck_assignment_expression(struct SyntaxNode *root) {
-    typecheck(root->first_child);
-    typecheck(root->last_child);
+void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
+    typecheck(root->first_child, symbol_table);
+    typecheck(root->last_child, symbol_table);
 
     if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
         printf(BOLD_RED "Error: can only assign to identifier, not %s\n" RESET,  syntax_names[root->first_child->syntax]);
@@ -133,10 +185,11 @@ void typecheck_assignment_expression(struct SyntaxNode *root) {
 
 /**
  * Verify that a unary expression has a valid type
- * @param root a pointer to the unary expression node  
+ * @param root a pointer to the unary expression node 
+ * @param symbol_table a pointer to the current scope's symbol table
  */
-void typecheck_unary_expression(struct SyntaxNode *root) {
-    typecheck(root->first_child);
+void typecheck_unary_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
+    typecheck(root->first_child, symbol_table);
 
     // TODO: method to check if unary operator is applicable to type
     if (types_match(root->first_child->type, &INT_TYPE)) {
@@ -151,4 +204,29 @@ void typecheck_unary_expression(struct SyntaxNode *root) {
         num_type_errors++;
     }
 }
+
+
+/**
+ * Store a declared variable in the symbol table
+ * @param specifier_node a pointer to the declaration specifier node
+ * @param declarator_node a pointer to the declarator node
+ * @param symbol_table a pointer to the current scope's symbol table
+ */
+void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table) {
+    struct Type *type = get_declaration_specifier_type(specifier_node);
+    char *name = copy_identifier_name(declarator_node);
+
+    if (type != &ERROR_TYPE && name != NULL) {
+        add_symbol(symbol_table, new_symbol(name, type));
+        declarator_node->type = type;
+    } else {
+        num_type_errors++;
+        printf(BOLD_RED "Error: cannot declare variable of type ");
+        print_type(type);
+        printf(" named %s\n" RESET, name);
+    }
+ 
+    
+}
+
 

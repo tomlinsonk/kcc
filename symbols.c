@@ -21,7 +21,10 @@
 #define INTIAL_CAPACITY 13
 
 
-
+/**
+ * Print a symbol table for debugging
+ * @param table a pointer to the table to print
+ */
 void print_table(struct SymbolTable *table) {
     int i;
     struct Symbol *current;
@@ -105,7 +108,7 @@ void free_symbol_table(struct SymbolTable *table) {
         current = (table->symbols)[i];
         while (current != NULL) {
             next = current->next;
-            // free(current->name);
+            free(current->name);
             free(current);
             current = next;
         }
@@ -168,7 +171,11 @@ void add_symbol(struct SymbolTable *table, struct Symbol *symbol) {
 
 }
 
-
-struct SymbolTable *new_subscope(struct SymbolTable *parent) {
+/**
+ * Create a new empty subtable
+ * @param parent the table under which to place the new one
+ * @return a pointer to the new table
+ */
+struct SymbolTable *new_subtable(struct SymbolTable *parent) {
     return NULL;
 }

@@ -44,12 +44,21 @@ int main() {
 
     symbol_table = new_symbol_table();
 
-    typecheck(root);
 
     printf("\n---- PARSE TREE ----\n");
     pretty_print(root);
 
-    printf("\nCompiled with %i parser errors and %i type errors.\n\n", num_parser_errors, num_type_errors);
+
+    typecheck(root, symbol_table);
+
+    printf("\n\n---- TYPECHECKED TREE ----\n");
+    pretty_print(root);
+
+    printf("\n\n---- SYMBOL TABLE ----\n");
+    print_table(symbol_table);
+
+
+    printf("\n\nCompiled with %i parser errors and %i type errors.\n\n", num_parser_errors, num_type_errors);
     
     free_tree(root);
     free_tokens(head);
