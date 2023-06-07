@@ -58,12 +58,12 @@ int main() {
     print_table(symbol_table);
 
 
-    printf("\n\nCompiled with %i parser errors and %i type errors.\n\n", num_parser_errors, num_type_errors);
+    printf("\n\nCompiled with %i syntax errors and %i semantic errors.\n\n", num_syntax_errors, num_semantic_errors);
     
     free_tree(root);
     free_tokens(head);
     free_symbol_table(symbol_table);
 
 
-    return num_parser_errors + num_type_errors;
+    return num_syntax_errors + num_semantic_errors;
 }

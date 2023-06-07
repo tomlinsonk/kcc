@@ -20,9 +20,10 @@
 #include "lexer.h"
 #include "parser.h"
 #include "types.h"
+#include "symbols.h"
 
 struct Token *cur_token;
-int num_parser_errors = 0;
+int num_syntax_errors = 0;
 char *input;
 
  
@@ -226,6 +227,7 @@ struct SyntaxNode *new_syntax_node(enum SyntaxKind syntax, struct Token *token) 
     node->token = token;
     node->first_child = node->last_child = node->next = NULL;
     node->type = NULL;
+    node->symbol = NULL;
     
     return node;
 }
@@ -252,13 +254,13 @@ void add_syntax_child(struct SyntaxNode *parent, struct SyntaxNode *child) {
 */
 void match(enum TokenKind token_kind) {
     if (cur_token == NULL) {
-        num_parser_errors++;
+        num_syntax_errors++;
         printf(BOLD_RED "Error: expected %s, reached end of file\n" RESET, token_kind_names[token_kind]);
         return;
     }
 
     if (cur_token->kind != token_kind) {
-        num_parser_errors++;
+        num_syntax_errors++;
         printf(BOLD_RED "Error: expected %s, got %s\n" RESET, token_kind_names[token_kind], token_kind_names[cur_token->kind]);
     }
 
@@ -277,7 +279,7 @@ struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
     struct SyntaxNode *root;
 
     cur_token = head;
-    num_parser_errors = 0;
+    num_syntax_errors = 0;
     input = input_seq;
 
     match(START_TOKEN);
@@ -352,7 +354,7 @@ struct SyntaxNode *parse_declaration_specifier() {
     } else {
         node->syntax = ERROR_SYNTAX;
         node->token = NULL;
-        num_parser_errors++;
+        num_syntax_errors++;
         printf(BOLD_RED "Error: expected declaration specifier, got ");
         printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);
     }
@@ -373,7 +375,7 @@ struct SyntaxNode *parse_declarator() {
     } else {
         node->syntax = ERROR_SYNTAX;
         node->token = NULL;
-        num_parser_errors++;
+        num_syntax_errors++;
         printf(BOLD_RED "Error: expected identifier, got ");
         printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);
     }
@@ -503,7 +505,7 @@ struct SyntaxNode *parse_primary_expression() {
     struct SyntaxNode *node = new_syntax_node(get_primary_expression_kind(cur_token), cur_token);
 
     if (node->syntax == ERROR_SYNTAX) {
-        num_parser_errors++;
+        num_syntax_errors++;
         node->token = NULL;
         printf(BOLD_RED "Error: expected primary expression, got ");
         printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);

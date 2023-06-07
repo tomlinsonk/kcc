@@ -22,7 +22,7 @@
 #include "types.h"
 #include "symbols.h"
 
-int num_type_errors = 0;
+int num_semantic_errors = 0;
 
 
 /**
@@ -56,7 +56,7 @@ char *copy_identifier_name(struct SyntaxNode *node) {
     char *new_string = NULL;
     int i;
 
-    if (node != NULL && node->syntax == DECLARATOR_SYNTAX && node->token->kind == IDENTIFIER_TOKEN) {
+    if (node != NULL && node->token != NULL && node->token->kind == IDENTIFIER_TOKEN) {
         new_string = malloc((node->token->length + 1) * sizeof(char));
 
         // Copy identifier name into new string, add null terminator
@@ -97,8 +97,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         root->type = &CHAR_ARRAY_TYPE;
         break;
     case IDENTIFIER_SYNTAX:
-        // TEMPORARY: TODO: symbol tables
-        root->type = &INT_IDENTIFIER_TYPE;
+        bind_identifier(root, symbol_table);
         break;
     case PARENTHESIZED_EXPRESSION_SYNTAX:
         typecheck(root->first_child, symbol_table);
@@ -149,7 +148,7 @@ void typecheck_binary_expression(struct SyntaxNode *root, struct SymbolTable *sy
         print_type(root->last_child->type);
         printf("\n" RESET);
 
-        num_type_errors++;
+        num_semantic_errors++;
     }
 }
 
@@ -164,7 +163,7 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
 
     if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
         printf(BOLD_RED "Error: can only assign to identifier, not %s\n" RESET,  syntax_names[root->first_child->syntax]);
-        num_type_errors++;
+        num_semantic_errors++;
     }
 
     // TODO: method to check if assignment operator is applicable
@@ -179,7 +178,7 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
         print_type(root->last_child->type);
         printf("\n" RESET);
 
-        num_type_errors++;
+        num_semantic_errors++;
     }
 }
 
@@ -201,7 +200,7 @@ void typecheck_unary_expression(struct SyntaxNode *root, struct SymbolTable *sym
         print_type(root->first_child->type);
         printf("\n" RESET);
 
-        num_type_errors++;
+        num_semantic_errors++;
     }
 }
 
@@ -217,16 +216,41 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
     char *name = copy_identifier_name(declarator_node);
 
     if (type != &ERROR_TYPE && name != NULL) {
-        add_symbol(symbol_table, new_symbol(name, type));
-        declarator_node->type = type;
+        if (get_symbol(symbol_table, name) == NULL) {
+            add_symbol(symbol_table, new_symbol(name, type));
+            declarator_node->type = type;
+        } else {
+            num_semantic_errors++;
+            printf(BOLD_RED "Error: duplicate declaration of %s\n" RESET, name);
+        }
     } else {
-        num_type_errors++;
+        num_semantic_errors++;
         printf(BOLD_RED "Error: cannot declare variable of type ");
         print_type(type);
         printf(" named %s\n" RESET, name);
     }
- 
-    
+}
+
+
+/**
+ * Look up an identifier in the symbol table, ensure it exists, and store its type in the tree
+ * @param identifier_node a pointer to the identifier node
+ * @param symbol_table a pointer to the current scope's symbol table
+ */
+void bind_identifier(struct SyntaxNode *identifier_node, struct SymbolTable *symbol_table) {
+    char *name = copy_identifier_name(identifier_node);
+    struct Symbol *symbol = get_symbol(symbol_table, name);
+
+    if (symbol != NULL) {
+        identifier_node->symbol = symbol;
+        identifier_node->type = symbol->type;
+    } else {
+        num_semantic_errors++;
+        identifier_node->type = &ERROR_TYPE;
+        printf(BOLD_RED "Error: unknown identifier %s\n" RESET, name);
+    }
+
+    free(name);
 }
 
 

@@ -58,7 +58,7 @@ void print_type(struct Type *type) {
 int types_match(struct Type *t1, struct Type *t2) {
     if (t1 == t2)
         return 1;
-    else if (t1->kind != t2->kind)
+    else if (t1 == NULL || t2 == NULL || t1->kind != t2->kind)
         return 0;
 
     switch (t1->kind) {

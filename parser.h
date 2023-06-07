@@ -10,6 +10,7 @@
 
 #include "types.h"
 #include "lexer.h"
+#include "symbols.h"
 
 
 
@@ -21,7 +22,7 @@ static const char *syntax_names[] = {
     "ERROR"
 };
 
-extern int num_parser_errors;
+extern int num_syntax_errors;
 
 
 enum SyntaxKind {
@@ -52,6 +53,7 @@ struct SyntaxNode {
     enum SyntaxKind syntax;
     struct Token *token;
     struct Type *type;
+    struct Symbol *symbol;
     struct SyntaxNode *first_child;
     struct SyntaxNode *last_child;
     struct SyntaxNode *next;
