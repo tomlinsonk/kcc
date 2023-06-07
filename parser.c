@@ -193,6 +193,21 @@ int is_declaration_specifier(struct Token *token) {
     }
 }
 
+
+/**
+ * Check if the next token sequence is a function defintion (as opposed to a declaration).
+ * If we encounter a { (starting a compound statement) before a ; (ending a declaration),
+ * then it's a function definition.
+ * @return 1 if function definition and 0 otherwise (either syntax error or declaration) 
+ */
+int is_function_definition() {
+    struct Token *token = cur_token;
+    while (token->kind != END_TOKEN && token->kind != OPEN_BRACE_TOKEN && token->kind != SEMICOLON_TOKEN)
+        token = token->next;
+
+    return token->kind == OPEN_BRACE_TOKEN;
+}
+
 /**
  * Check for what kind of primary expression starts with the given token.
  * Could be constant, identifier, or parenthesised expression
@@ -284,12 +299,48 @@ struct SyntaxNode *parse(struct Token *head, char input_seq[]) {
 
     match(START_TOKEN);
     
-    root = parse_compound_statement();
+    root = parse_translation_unit();
 
     match(END_TOKEN);
 
     return root;
 }
+
+
+/**
+ * Parse a translation unit: the top-level syntax kind, consisting of a sequence of
+ * external declatations (function definitions and declarations).
+ * @return a pointer to the translation unit node
+ */
+struct SyntaxNode *parse_translation_unit() {
+    struct SyntaxNode *node = new_syntax_node(TRANSLATION_UNIT_SYNTAX, NULL);
+
+    while (cur_token != NULL && cur_token->kind != END_TOKEN) 
+        add_syntax_child(node, is_function_definition() ? parse_function_definition() : parse_declaration());
+
+    return node;
+
+}
+
+/**
+ * Parse a function definition of the form [declaration specifier] [declarator] [parameter list] [compound statement]
+ * @return a pointer to the function definition node
+ */
+struct SyntaxNode *parse_function_definition() {
+    struct SyntaxNode *node = new_syntax_node(FUNCTION_DEFINITION_SYNTAX, NULL);
+    
+    add_syntax_child(node, parse_declaration_specifier());
+    add_syntax_child(node, parse_declarator());
+
+    match(OPEN_PAREN_TOKEN);
+    // add_syntax_child(node, parse_parameter_list()); // TODO: parse parameter list
+    match(CLOSE_PAREN_TOKEN);
+
+    add_syntax_child(node, parse_compound_statement());
+
+    return node;
+}
+
 
 /**
  * Parse a compound statement of the form {[declaration list] [statement list]}

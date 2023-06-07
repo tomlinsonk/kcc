@@ -79,6 +79,7 @@ char *copy_identifier_name(struct SyntaxNode *node) {
  */
 void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     struct SyntaxNode *cur_node;
+    struct SymbolTable *new_table;
 
     switch (root->syntax){
     case ASSIGNMENT_EXPRESSION_SYNTAX:
@@ -106,9 +107,18 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case DECLARATION_SYNTAX:
         bind_declaration(root->first_child, root->last_child, symbol_table);
         break;
+    case FUNCTION_DEFINITION_SYNTAX:
+        // TODO: bind function name
+        typecheck(root->last_child, symbol_table);
+        break;
+
+    case COMPOUND_STATEMENT_SYNTAX:
+        // Create a new scope!
+        symbol_table = new_subtable(symbol_table);
+        // Fall through to typechexking list of children
+    case TRANSLATION_UNIT_SYNTAX:
     case DECLARATION_LIST_SYNTAX:
     case STATEMENT_LIST_SYNTAX:
-    case COMPOUND_STATEMENT_SYNTAX:
         root->type = &VOID_TYPE;
         cur_node = root->first_child;
         while (cur_node != NULL) {
@@ -119,6 +129,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case EXPRESSION_STATEMENT_SYNTAX:
         root->type = &VOID_TYPE;
         typecheck(root->first_child, symbol_table);
+        break;
     default:
         root->type = &VOID_TYPE;
         break;
@@ -216,7 +227,8 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
     char *name = copy_identifier_name(declarator_node);
 
     if (type != &ERROR_TYPE && name != NULL) {
-        if (get_symbol(symbol_table, name) == NULL) {
+        // Use get_symbol_in_table rather than get_symbol to allow shadowing
+        if (get_symbol_in_table(symbol_table, name) == NULL) {
             add_symbol(symbol_table, new_symbol(name, type));
             declarator_node->type = type;
         } else {

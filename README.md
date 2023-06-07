@@ -18,8 +18,13 @@ int main() {
 ```
 This will require a few basic features:
 1. ~~Parsing declarations (skip initializer for now)~~
-2. ~~SymbolTable~~ and identifier binding
-3. Parsing function definitions and return statements
+2. ~~SymbolTable and identifier binding~~
+3. ~~Parsing function definitions (skip parameters for now)~~ and return statements
 4. Binding function names
 5. Typechecking function return type
 6. Generating 6502 assembly
+    - Heap and stack allocation
+    - Integer constants
+    - Assignment
+    - Addition
+    - Return

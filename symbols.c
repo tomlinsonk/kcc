@@ -29,6 +29,9 @@ void print_table(struct SymbolTable *table) {
     int i;
     struct Symbol *current;
 
+    if (table == NULL)
+        return;
+
     for (i = 0; i < table->capacity; i++) {
         printf("%i: ", i);
 
@@ -134,15 +137,33 @@ void free_symbol_table(struct SymbolTable *table) {
 /**
  * Retreive a symbol from a symbol table by name. If it's not in the current table,
  * look in the parent tables. Returns null if a symbol with that name can't be found
- * @param table the table in which to search
+ * @param table the table in which to start searching
  * @param symbol_name the name of the symbol to retreive
  * @return a pointer to the symbol, or null if the symbol can't be found
  */
 struct Symbol *get_symbol(struct SymbolTable *table, char *symbol_name) {
-    // Base case: null table doesn't contain symbol
+    struct Symbol *symbol;
+
     if (table == NULL)
         return NULL;
 
+    symbol = get_symbol_in_table(table, symbol_name);
+
+    if (symbol == NULL) 
+        // if we didn't find the symbol in this table, look recursively in the parent table
+        symbol = get_symbol(table->parent, symbol_name);
+
+    return symbol;
+}
+
+
+/**
+ * Retreive a symbol from a symbol table by name, but without looking in parent tables
+ * @param table the table in which to search
+ * @param symbol_name the name of the symbol to retreive
+ * @return a pointer to the symbol, or null if the symbol isn't in table
+ */
+struct Symbol *get_symbol_in_table(struct SymbolTable *table, char *symbol_name) {
     int i = hash(symbol_name) % table->capacity;
     struct Symbol *cur_symbol = (table->symbols)[i];
 
@@ -151,11 +172,11 @@ struct Symbol *get_symbol(struct SymbolTable *table, char *symbol_name) {
             return cur_symbol;
         
         cur_symbol = cur_symbol->next;
-    } 
+    }
 
-    // if we didn't find the symbol in this table, look recursively in the parent table
-    return get_symbol(table->parent, symbol_name);
+    return NULL; 
 }
+
 
 /**
  * Add a symbol to a symbol table. Does not check for duplicates
@@ -177,5 +198,16 @@ void add_symbol(struct SymbolTable *table, struct Symbol *symbol) {
  * @return a pointer to the new table
  */
 struct SymbolTable *new_subtable(struct SymbolTable *parent) {
-    return NULL;
+    struct SymbolTable *child = new_symbol_table();
+    
+    if (parent->first_child == NULL) {
+        parent->first_child = parent->last_child = child;
+    } else {
+        parent->last_child->next = child;
+        parent->last_child = child;
+    }
+
+    child->parent = parent;
+
+    return child;
 }

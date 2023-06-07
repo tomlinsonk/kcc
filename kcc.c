@@ -58,6 +58,10 @@ int main() {
     print_table(symbol_table);
 
 
+    print_table(symbol_table->first_child);
+
+
+
     printf("\n\nCompiled with %i syntax errors and %i semantic errors.\n\n", num_syntax_errors, num_semantic_errors);
     
     free_tree(root);
