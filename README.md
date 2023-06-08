@@ -21,7 +21,7 @@ This will require a few basic features:
 2. ~~SymbolTable and identifier binding~~
 3. ~~Parsing function definitions (skip parameters for now) and return statements~~ 
 4. ~~Binding function names~~ 
-5. ~~ Typechecking function return type~~ 
+5. ~~Typechecking function return type~~ 
 6. Generating 6502 assembly
     - Heap and stack allocation
     - Integer constants
