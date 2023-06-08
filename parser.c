@@ -240,10 +240,10 @@ struct SyntaxNode *new_syntax_node(enum SyntaxKind syntax, struct Token *token) 
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
     node->syntax = syntax;
     node->token = token;
-    node->first_child = node->last_child = node->next = NULL;
     node->type = NULL;
     node->symbol = NULL;
-    
+    node->first_child = node->last_child = node->next = node->parent = NULL;
+
     return node;
 }
 
@@ -259,6 +259,7 @@ void add_syntax_child(struct SyntaxNode *parent, struct SyntaxNode *child) {
         parent->last_child->next = child;
         parent->last_child = child;
     }
+    child->parent = parent;
 }
 
 
@@ -443,10 +444,26 @@ struct SyntaxNode *parse_statement_list() {
     struct SyntaxNode *node = new_syntax_node(STATEMENT_LIST_SYNTAX, NULL);
 
     do {
-        add_syntax_child(node, parse_expression_statement());
+        add_syntax_child(node, parse_statement());
     } while (cur_token != NULL && cur_token->kind != CLOSE_BRACE_TOKEN && cur_token->kind != END_TOKEN);
 
     return node;
+}
+
+
+/**
+ * Parse a statement: for now, expression statement or compound statement
+ * @return a pointer to the statement node
+ */
+struct SyntaxNode *parse_statement() {
+    switch (cur_token->kind) {
+    case OPEN_BRACE_TOKEN:
+        return parse_compound_statement();
+    case RETURN_KEYWORD_TOKEN:
+        return parse_return_statement();
+    default:
+        return parse_expression_statement();
+    }
 }
 
 /**
@@ -455,11 +472,31 @@ struct SyntaxNode *parse_statement_list() {
  */
 struct SyntaxNode *parse_expression_statement() {
     struct SyntaxNode *node = new_syntax_node(EXPRESSION_STATEMENT_SYNTAX, NULL);
+    
+    if (cur_token->kind != SEMICOLON_TOKEN)
+        add_syntax_child(node, parse_expression());
+    
+    match(SEMICOLON_TOKEN);
+
+    return node;
+}
+
+/**
+ * Parse a statement of the form [expression];
+ * @return a pointer to the expression statement node
+ */
+struct SyntaxNode *parse_return_statement() {
+    struct SyntaxNode *node = new_syntax_node(RETURN_STATEMENT_SYNTAX, NULL);
+    
+    match(RETURN_KEYWORD_TOKEN);
     add_syntax_child(node, parse_expression());
     match(SEMICOLON_TOKEN);
 
     return node;
 }
+
+
+
 
 
 /**

@@ -33,6 +33,7 @@ struct Type {
         struct Type *of_type;
         struct Type *return_type;
     };
+    struct Type *next_param_type;
     int lvalue;
 };
 

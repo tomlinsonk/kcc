@@ -17,7 +17,7 @@
 static const char *syntax_names[] = {
     "INT_CONSTANT", "STRING", "IDENTIFIER", 
     "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ASSIGNMENT_EXPRESSION",
-    "EXPRESSION_STATEMENT", "COMPOUND_STATEMENT", "STATEMENT_LIST", 
+    "RETURN_STATEMENT", "EXPRESSION_STATEMENT", "COMPOUND_STATEMENT", "STATEMENT_LIST", 
     "DECLARATOR", "DECLARATION_SPECIFIER", "DECLARATION", "DECLARATION_LIST",
     "FUNCTION_DEFINITION", "PARAMETER_LIST",
     "TRANSLATION_UNIT",
@@ -37,6 +37,7 @@ enum SyntaxKind {
     PARENTHESIZED_EXPRESSION_SYNTAX,
     ASSIGNMENT_EXPRESSION_SYNTAX,
 
+    RETURN_STATEMENT_SYNTAX,
     EXPRESSION_STATEMENT_SYNTAX,
     COMPOUND_STATEMENT_SYNTAX,
     STATEMENT_LIST_SYNTAX,
@@ -64,6 +65,7 @@ struct SyntaxNode {
     struct SyntaxNode *first_child;
     struct SyntaxNode *last_child;
     struct SyntaxNode *next;
+    struct SyntaxNode *parent;
 };
 
 void pretty_print(struct SyntaxNode *root);
@@ -83,7 +85,7 @@ struct SyntaxNode *parse_translation_unit();
 
 struct SyntaxNode *parse_function_definition(); 
 
-struct SyntaxNode *parse_compound_statement();
+
 
 struct SyntaxNode *parse_declaration_list();
 struct SyntaxNode *parse_declaration();
@@ -91,7 +93,10 @@ struct SyntaxNode *parse_declaration_specifier();
 struct SyntaxNode *parse_declarator();
 
 struct SyntaxNode *parse_statement_list();
+struct SyntaxNode *parse_statement();
+struct SyntaxNode *parse_compound_statement();
 struct SyntaxNode *parse_expression_statement();
+struct SyntaxNode *parse_return_statement();
 
 struct SyntaxNode *parse_expression();
 struct SyntaxNode *parse_assignment_expression();

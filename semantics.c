@@ -31,7 +31,7 @@ int num_semantic_errors = 0;
  * @return a pointer to the type corresponding to the declaration specifier
  */
 struct Type *get_declaration_specifier_type(struct SyntaxNode *node) {
-    if (node != NULL) {
+    if (node != NULL && node->token != NULL) {
         switch (node->token->kind) {
         case INT_KEYWORD_TOKEN:
             return &INT_TYPE;    
@@ -69,6 +69,21 @@ char *copy_identifier_name(struct SyntaxNode *node) {
     return new_string;
 }
 
+/**
+ * When node is inside the function body (in the compound statement subtree),
+ * find the return type of the function by tracing up the syntax tree until reaching
+ * the function definition
+ * 
+ * @param node a SyntaxNode inside a function definition
+ * @return the return type of the enclosing function
+ */
+struct Type *get_enclosing_function_return_type(struct SyntaxNode *node) {
+    while (node->syntax != FUNCTION_DEFINITION_SYNTAX)
+        node = node->parent;
+
+    return node->type->return_type;
+}
+
 
 
 /**
@@ -91,6 +106,9 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case UNARY_EXPRESSION_SYNTAX:
         typecheck_unary_expression(root, symbol_table);
         break;
+    case RETURN_STATEMENT_SYNTAX:
+        typecheck_return_statement(root, symbol_table);
+        break;
     case INT_CONSTANT_SYNTAX:
         root->type = &INT_TYPE;
         break;
@@ -109,6 +127,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         break;
     case FUNCTION_DEFINITION_SYNTAX:
         // TODO: bind function name
+        // TODO: set type to function type with return type and parameter types
         typecheck(root->last_child, symbol_table);
         break;
 
@@ -128,7 +147,8 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         break;
     case EXPRESSION_STATEMENT_SYNTAX:
         root->type = &VOID_TYPE;
-        typecheck(root->first_child, symbol_table);
+        if (root->first_child != NULL)
+            typecheck(root->first_child, symbol_table);
         break;
     default:
         root->type = &VOID_TYPE;
@@ -213,6 +233,18 @@ void typecheck_unary_expression(struct SyntaxNode *root, struct SymbolTable *sym
 
         num_semantic_errors++;
     }
+}
+
+/**
+ * Verify that a return statement returns the correct type
+ * @param root a pointer to the return statement node 
+ * @param symbol_table a pointer to the current scope's symbol table
+ */
+void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
+    // struct Type *return_type = get_enclosing_function_return_type(root);
+    // TODO: verify that return type matches function's declared return type
+    root->type = &VOID_TYPE;
+    typecheck(root->first_child, symbol_table);
 }
 
 
