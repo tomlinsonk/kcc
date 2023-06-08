@@ -312,13 +312,13 @@ void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbo
 
     struct Type *type = new_type(FUNCTION_TYPE);
     type->return_type = get_declaration_specifier_type(node->first_child);
+    node->type = type;
 
     // TODO: process parameter list, add to parameter type list
 
     if (type->return_type != &ERROR_TYPE && name != NULL) {
         if (get_symbol_in_table(symbol_table, name) == NULL) {
             add_symbol(symbol_table, new_symbol(name, type));
-            node->type = type;
         } else {
             num_semantic_errors++;
             printf(BOLD_RED "Error: duplicate identifier %s\n" RESET, name);
