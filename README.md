@@ -28,3 +28,23 @@ This will require a few basic features:
     - Assignment
     - Addition
     - Return
+
+
+#### Milestone 2
+Once I can compile and run the barebones program above, I want to focus on adding control flow. The next program I'll work towards compiling counts the length of the Collatz sequence starting at 27, which should return 111:
+```C
+int main() {
+    int n = 27;
+    int i = 0;
+
+    while (n != 1) {
+        i++;
+        if (n % 2 == 0) {
+            n = n >> 1;
+        } else {
+            n = n + n + n + 1;    // avoiding multiplication
+        }
+    }
+    return i;
+}
+```
