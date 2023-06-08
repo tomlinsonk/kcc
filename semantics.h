@@ -21,6 +21,6 @@ void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *sym
 
 void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table);
 void bind_identifier(struct SyntaxNode *identifier_node, struct SymbolTable *symbol_table);
-
+void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table);
 
 #endif

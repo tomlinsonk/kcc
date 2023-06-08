@@ -126,11 +126,9 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         bind_declaration(root->first_child, root->last_child, symbol_table);
         break;
     case FUNCTION_DEFINITION_SYNTAX:
-        // TODO: bind function name
-        // TODO: set type to function type with return type and parameter types
+        bind_function_definition(root, symbol_table);
         typecheck(root->last_child, symbol_table);
         break;
-
     case COMPOUND_STATEMENT_SYNTAX:
         // Create a new scope!
         symbol_table = new_subtable(symbol_table);
@@ -138,7 +136,6 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case TRANSLATION_UNIT_SYNTAX:
     case DECLARATION_LIST_SYNTAX:
     case STATEMENT_LIST_SYNTAX:
-        root->type = &VOID_TYPE;
         cur_node = root->first_child;
         while (cur_node != NULL) {
             typecheck(cur_node, symbol_table);
@@ -146,12 +143,10 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         }
         break;
     case EXPRESSION_STATEMENT_SYNTAX:
-        root->type = &VOID_TYPE;
         if (root->first_child != NULL)
             typecheck(root->first_child, symbol_table);
         break;
     default:
-        root->type = &VOID_TYPE;
         break;
     }
 }
@@ -241,10 +236,17 @@ void typecheck_unary_expression(struct SyntaxNode *root, struct SymbolTable *sym
  * @param symbol_table a pointer to the current scope's symbol table
  */
 void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
-    // struct Type *return_type = get_enclosing_function_return_type(root);
-    // TODO: verify that return type matches function's declared return type
-    root->type = &VOID_TYPE;
+    struct Type *return_type = get_enclosing_function_return_type(root);
     typecheck(root->first_child, symbol_table);
+
+    if (!types_match(return_type, root->first_child->type)) {
+        printf(BOLD_RED "Error: trying to return ");
+        print_type(root->first_child->type);
+        printf(", but declared return type is ");
+        print_type(return_type);
+        printf("\n" RESET);
+        num_semantic_errors++;
+    }
 }
 
 
@@ -265,7 +267,7 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
             declarator_node->type = type;
         } else {
             num_semantic_errors++;
-            printf(BOLD_RED "Error: duplicate declaration of %s\n" RESET, name);
+            printf(BOLD_RED "Error: duplicate identifier %s\n" RESET, name);
         }
     } else {
         num_semantic_errors++;
@@ -298,3 +300,35 @@ void bind_identifier(struct SyntaxNode *identifier_node, struct SymbolTable *sym
 }
 
 
+
+/**
+ * Store a defined function in the symbol table
+ * @param node a pointer to the function definition node
+ * @param symbol_table a pointer to the current scope's symbol table
+ */
+void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table) {
+    char *name = copy_identifier_name(node->first_child->next);
+    // char *name = NULL;
+
+    struct Type *type = new_type(FUNCTION_TYPE);
+    type->return_type = get_declaration_specifier_type(node->first_child);
+
+    // TODO: process parameter list, add to parameter type list
+
+    if (type->return_type != &ERROR_TYPE && name != NULL) {
+        if (get_symbol_in_table(symbol_table, name) == NULL) {
+            add_symbol(symbol_table, new_symbol(name, type));
+            node->type = type;
+        } else {
+            num_semantic_errors++;
+            printf(BOLD_RED "Error: duplicate identifier %s\n" RESET, name);
+        }
+    } else {
+        num_semantic_errors++;
+        printf(BOLD_RED "Error: cannot declare function with return type ");
+        print_type(type->return_type);
+        printf(" named %s\n" RESET, name);
+    }
+
+    
+}

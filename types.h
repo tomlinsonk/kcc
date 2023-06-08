@@ -50,6 +50,7 @@ static struct Type INT_IDENTIFIER_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_P
 
 void print_type(struct Type *type);
 
+struct Type *new_type(enum TypeKind kind);
 int types_match(struct Type *t1, struct Type *t2);
 
 #endif

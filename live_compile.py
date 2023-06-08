@@ -4,6 +4,7 @@ import hashlib
 import os
 import signal
 import subprocess
+import time
 
 # Thanks, https://stackoverflow.com/a/59056796
 def get_hash(fname):
@@ -22,6 +23,7 @@ if __name__ == '__main__':
     while True:
         new_hash = get_hash('input.txt')
         if new_hash == prev_hash:
+            time.sleep(0.01)
             continue
 
         prev_hash = new_hash

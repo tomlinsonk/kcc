@@ -74,7 +74,8 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     }
 
     printf(" ");
-    print_type(root->type);
+    if (root-> type != NULL)
+        print_type(root->type);
     printf("\n");
 
     cur_child = root->first_child;

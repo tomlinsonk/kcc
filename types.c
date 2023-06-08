@@ -16,7 +16,6 @@
 
 #include "types.h"
 
-
 /**
  * Print a type nicely, recursively; for instance:
  * function returning pointer to array of char
@@ -72,3 +71,16 @@ int types_match(struct Type *t1, struct Type *t2) {
         return types_match(t1->return_type, t2->return_type);
     }
 }
+
+
+/**
+ * Allocate a new type of the given kind
+ * @param kind the kind of type (pointer, array, primitive, function, ) 
+ * @return a pointer to the new type
+ */
+struct Type *new_type(enum TypeKind kind) {
+    struct Type *type = malloc(sizeof(type));
+    type->kind = kind;
+
+    return type;
+} 
