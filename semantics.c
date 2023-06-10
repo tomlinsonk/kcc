@@ -85,6 +85,17 @@ struct Type *get_enclosing_function_return_type(struct SyntaxNode *node) {
 }
 
 
+/**
+ * Check to see if a main method exists with signature int main().
+ * @param symbol_table the top-level symbol table
+ * @return 1 if main exists, 0 if not
+ */
+int main_exists(struct SymbolTable *symbol_table) {
+    struct Symbol *main = get_symbol(symbol_table, "main");
+    return main != NULL && types_match(main->type, &MAIN_FUNCTION_TYPE);
+}
+
+
 
 /**
  * Recursively typecheck a syntax tree. Annotates the nodes with their types.

@@ -13,6 +13,8 @@
 
 extern int num_semantic_errors;
 
+int main_exists(struct SymbolTable *symbol_table);
+
 void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table);
 void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table);
 void typecheck_binary_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table);

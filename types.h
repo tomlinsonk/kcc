@@ -43,9 +43,7 @@ static struct Type VOID_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=VOID_PRIMITIVE,
 static struct Type ERROR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=ERROR_PRIMITIVE, .lvalue=0};
 
 static struct Type CHAR_ARRAY_TYPE = {.kind=ARRAY_TYPE, .of_type=&CHAR_TYPE, .lvalue=0};
-
-// TEMPORARY
-static struct Type INT_IDENTIFIER_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_PRIMITIVE, .lvalue=1};
+static struct Type MAIN_FUNCTION_TYPE = {.kind=FUNCTION_TYPE, .return_type=&INT_TYPE, .lvalue=0};
 
 
 void print_type(struct Type *type);

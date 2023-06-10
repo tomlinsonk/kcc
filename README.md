@@ -22,7 +22,7 @@ This will require a few basic features:
 3. ~~Parsing function definitions (skip parameters for now) and return statements~~ 
 4. ~~Binding function names~~ 
 5. ~~Typechecking function return type~~ 
-6. Generating 6502 assembly
+6. Emitting 6502 assembly
     - Heap and stack allocation
     - Integer constants
     - Assignment
@@ -40,11 +40,12 @@ int main() {
     while (n != 1) {
         i++;
         if (n % 2 == 0) {
-            n = n >> 1;
+            n = n >> 1;           // avoiding division
         } else {
             n = n + n + n + 1;    // avoiding multiplication
         }
     }
+
     return i;
 }
 ```

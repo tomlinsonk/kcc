@@ -45,7 +45,9 @@ void pretty_print(struct SyntaxNode *root) {
  */
 void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size, int is_last) {
     char* marker = is_last ? "└──" : "├──";
-    char* new_indent = malloc((indent_size + 4) * sizeof(char));;
+
+    // note: due to unicode characters, strlen("│  ") = 5
+    char* new_indent = malloc((indent_size + 5) * sizeof(char));
     struct SyntaxNode *cur_child;
 
     strcpy(new_indent, indent);
@@ -80,7 +82,7 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
 
     cur_child = root->first_child;
     while (cur_child != NULL) {
-        pretty_print_helper(cur_child, new_indent, indent_size + 4, cur_child->next == NULL);
+        pretty_print_helper(cur_child, new_indent, indent_size + 5, cur_child->next == NULL);
         cur_child = cur_child->next;
     }
 
