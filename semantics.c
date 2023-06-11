@@ -270,11 +270,15 @@ void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *sym
 void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table) {
     struct Type *type = get_declaration_specifier_type(specifier_node);
     char *name = copy_identifier_name(declarator_node);
+    struct Symbol *symbol;
+
 
     if (type != &ERROR_TYPE && name != NULL) {
         // Use get_symbol_in_table rather than get_symbol to allow shadowing
         if (get_symbol_in_table(symbol_table, name) == NULL) {
-            add_symbol(symbol_table, new_symbol(name, type));
+            symbol = new_symbol(name, type);
+            add_symbol(symbol_table, symbol);
+            declarator_node->symbol = symbol;
             declarator_node->type = type;
         } else {
             num_semantic_errors++;
@@ -319,7 +323,7 @@ void bind_identifier(struct SyntaxNode *identifier_node, struct SymbolTable *sym
  */
 void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table) {
     char *name = copy_identifier_name(node->first_child->next);
-    // char *name = NULL;
+    struct Symbol *symbol;
 
     struct Type *type = new_type(FUNCTION_TYPE);
     type->return_type = get_declaration_specifier_type(node->first_child);
@@ -329,7 +333,9 @@ void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbo
 
     if (type->return_type != &ERROR_TYPE && name != NULL) {
         if (get_symbol_in_table(symbol_table, name) == NULL) {
-            add_symbol(symbol_table, new_symbol(name, type));
+            symbol = new_symbol(name, type);
+            add_symbol(symbol_table, symbol);
+            node->symbol = symbol;
         } else {
             num_semantic_errors++;
             printf(BOLD_RED "Error: duplicate identifier %s\n" RESET, name);

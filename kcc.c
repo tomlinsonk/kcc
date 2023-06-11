@@ -24,7 +24,6 @@
  */
 int main() {
     FILE *fp = fopen("input.txt", "r");
-    char *out_fname = "out.asm";
 
     int size = fsize(fp);
     char input[size+1];
@@ -72,8 +71,8 @@ int main() {
     printf("%i semantic errors.\n", num_semantic_errors);
 
     if (num_syntax_errors + num_semantic_errors == 0) {
-        printf("Emitting assembly to %s.\n", out_fname);
-        emit(root, symbol_table, out_fname);
+        printf("Emitting assembly.\n");
+        emit_translation_unit(root, symbol_table);
     } else {
         printf(BOLD_RED "Not compiling due to errors.\n" RESET);
     }

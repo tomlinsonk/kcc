@@ -131,7 +131,7 @@ struct Token *lex(char input[]) {
             new_token->length = i - new_token->index;
             new_token->kind = INT_CONSTANT_TOKEN;
             new_token->int_value = get_int_value(input, new_token->index, new_token->length);
-        } else if (isalpha(input[i]) || input[i] == '_') {
+        } else if (isalpha(input[i])) {
             /* Check for identifier */
             while (isalnum(input[i]) || input[i] == '_') 
                 i++;

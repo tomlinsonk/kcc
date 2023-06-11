@@ -49,3 +49,38 @@ int main() {
     return i;
 }
 ```
+
+## Design details
+
+### Types
+- `char`: 8-bit unsigned integer
+- `int`: 16-bit signed integer   
+- ...
+
+### Function calling
+#### Stack 
+The CPU stack is only 256 bytes, so C function calling is implemented in a software stack with top at $5fff. This stack is referred to as the *C stack*. 
+
+#### Stack frames
+From top to bottom, a stack frame consists of:
+- arguments (if any) 1, 2, ..., *n*
+- return address - 1 high byte
+- return address - 1 low byte
+- callee locals
+
+The first three bullets are set by the caller. Note that 1 is subtracted from the return address so that an `rts` can be used to jump to the correct return address.
+
+#### Register use
+The A, X, Y and registers may all be overwritten by the callee.
+
+#### Returning
+The callee places its return value in the following locations:
+- `char`: A register
+- `int`: A register (low byte), X register (high byte) 
+
+The callee then pops its locals off the C stack, pops the return address - 1 off the stack, and jumps to the return address. The caller must then pop the arguments off the stack
+
+
+### Entry and exit
+Every program must have function `int main()`. To enter the program, the executable performs the call `main()`. After this call completes, the executable issues a `brk` to return to the system monitor. The return code of the program is then accessible in A (low byte), X (high byte). 
+
