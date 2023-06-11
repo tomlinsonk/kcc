@@ -92,17 +92,37 @@ void emit_translation_unit(struct SyntaxNode *root, struct SymbolTable *symbol_t
  */
 void emit_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table) {
     struct Symbol *symbol = node->symbol;
+    struct SyntaxNode *body = node->last_child;
+    int n_local_bytes = 0;
 
     // Emit the function label
     emit_no_tab("%s:", symbol->name);
 
     // TODO: handle arguments
 
-    // TODO: push space for locals
+    // Push space for locals
+    if (body->first_child != NULL && body->first_child->syntax == DECLARATION_LIST_SYNTAX) {
+        struct Symbol *decl_symbol;
+        for (struct SyntaxNode *declaration = body->first_child->first_child; declaration != NULL; declaration = declaration->next) {
+            decl_symbol = declaration->last_child->symbol;
+            if (types_match(decl_symbol->type, &INT_TYPE)) {
+                n_local_bytes += 2;
+
+            } else {
+                printf(BOLD_RED "ERROR: no emitter support for type ");
+                print_type(decl_symbol->type);
+                printf("\n" RESET);
+            }
+        }
+
+        emit("add2 sp : #-%i", n_local_bytes);
+    }
 
     // TODO: emit function body
 
-    // TODO: pop locals
+    // Pop locals
+    if (n_local_bytes > 0) 
+        emit("add2 sp : #%i", n_local_bytes);
 
     // Return from the function
     emit("jsr _pop");
