@@ -71,8 +71,8 @@ int main() {
     printf("%i semantic errors.\n", num_semantic_errors);
 
     if (num_syntax_errors + num_semantic_errors == 0) {
-        printf("Emitting assembly.\n");
-        emit_translation_unit(root, symbol_table);
+        printf("Emitting assembly to out.asm.\n");
+        emit_translation_unit(root);
     } else {
         printf(BOLD_RED "Not compiling due to errors.\n" RESET);
     }

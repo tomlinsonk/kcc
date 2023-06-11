@@ -66,7 +66,6 @@ If no target is given, store the result in arg1
     sta _2byteNextArgument(target)
 }
 
-
 .label sp = $00
 .const stack_top = $5fff
 
@@ -78,26 +77,25 @@ If no target is given, store the result in arg1
 _enter:
     mov2 #stack_top : sp
 
-	lda #(>(_exit-1))
-	jsr _push
 	lda #(<(_exit-1))
+	jsr _push
+	lda #(>(_exit-1))
 	jsr _push
 
 	jmp main
 
 _exit:
-	brk 
-	nop
+    brk 
+    nop
+
 	jmp _enter
 
-_push: {
+_push:
 	sta (sp)	
 	dec2 sp
 	rts
-}
 
-_pop: {
-	lda (sp)
+_pop:
 	inc2 sp
+	lda (sp)
 	rts
-}

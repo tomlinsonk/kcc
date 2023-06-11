@@ -14,8 +14,11 @@
 #include "symbols.h"
 
 
-void emit_translation_unit(struct SyntaxNode *node, struct SymbolTable *symbol_table);
-void emit_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table);
+void emit_translation_unit(struct SyntaxNode *node);
+void emit_function_definition(struct SyntaxNode *node);
+void emit_compound_statement(struct SyntaxNode *node);
+void emit_statement(struct SyntaxNode *node);
+
 void emit(char *str, ...);
 void emit_no_tab(char *str, ...);
 

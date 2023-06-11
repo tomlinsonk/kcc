@@ -11,7 +11,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-
 #include "emitter.h"
 #include "parser.h"
 #include "lexer.h"
@@ -22,9 +21,7 @@
 #define BOLD_YELLOW "\033[1m\033[33m"
 #define RESET       "\033[0m"
 
-
 FILE *out;
-
 
 /**
  * Emit a (possibly formatted) string to out. Adds a tab before and a newline afterwards
@@ -58,9 +55,8 @@ void emit_no_tab(char *str, ...) {
 /**
  * Emits the 65C02 assembly code for the given bound SyntaxTree
  * @param root the root of the syntax tree (a translation unit node)
- * @param symbol_table the top-level symbol table
  */
-void emit_translation_unit(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
+void emit_translation_unit(struct SyntaxNode *root) {
     FILE *template = fopen("template.asm", "r");
     char c;
     struct SyntaxNode *node;
@@ -75,7 +71,7 @@ void emit_translation_unit(struct SyntaxNode *root, struct SymbolTable *symbol_t
 
     for (node = root->first_child; node != NULL; node = node->next) {
         if (node->syntax == FUNCTION_DEFINITION_SYNTAX) {
-            emit_function_definition(node, symbol_table);
+            emit_function_definition(node);
         } else {
             printf(BOLD_YELLOW "Warning: no emitter support for external declarations.\n" RESET);
         }
@@ -90,39 +86,17 @@ void emit_translation_unit(struct SyntaxNode *root, struct SymbolTable *symbol_t
  * @param node the function definition SyntaxNode
  * @param symbol_table the top-level symbol table
  */
-void emit_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table) {
+void emit_function_definition(struct SyntaxNode *node) {
     struct Symbol *symbol = node->symbol;
     struct SyntaxNode *body = node->last_child;
-    int n_local_bytes = 0;
 
     // Emit the function label
     emit_no_tab("%s:", symbol->name);
 
     // TODO: handle arguments
 
-    // Push space for locals
-    if (body->first_child != NULL && body->first_child->syntax == DECLARATION_LIST_SYNTAX) {
-        struct Symbol *decl_symbol;
-        for (struct SyntaxNode *declaration = body->first_child->first_child; declaration != NULL; declaration = declaration->next) {
-            decl_symbol = declaration->last_child->symbol;
-            if (types_match(decl_symbol->type, &INT_TYPE)) {
-                n_local_bytes += 2;
-
-            } else {
-                printf(BOLD_RED "ERROR: no emitter support for type ");
-                print_type(decl_symbol->type);
-                printf("\n" RESET);
-            }
-        }
-
-        emit("add2 sp : #-%i", n_local_bytes);
-    }
-
-    // TODO: emit function body
-
-    // Pop locals
-    if (n_local_bytes > 0) 
-        emit("add2 sp : #%i", n_local_bytes);
+    // Emit function body
+    emit_compound_statement(node->last_child);
 
     // Return from the function
     emit("jsr _pop");
@@ -133,5 +107,56 @@ void emit_function_definition(struct SyntaxNode *node, struct SymbolTable *symbo
 }
 
 
+/**
+ * Emit assembly for a compound statement. Allocates space for locals on the stack 
+ * and pops them when done
+ * @param node the compound statement node 
+ */
+void emit_compound_statement(struct SyntaxNode *node) {
+    int n_local_bytes = 0;
+
+    // Push space for locals if there are declarations
+    if (node->first_child != NULL && node->first_child->syntax == DECLARATION_LIST_SYNTAX) {
+        struct Symbol *decl_symbol;
+        for (struct SyntaxNode *declaration = node->first_child->first_child; declaration != NULL; declaration = declaration->next) {
+            decl_symbol = declaration->last_child->symbol;
+            if (types_match(decl_symbol->type, &INT_TYPE)) {
+                n_local_bytes += 2;
+            } else if (types_match(decl_symbol->type, &CHAR_TYPE)) {
+                n_local_bytes += 1;
+            } else {
+                printf(BOLD_RED "ERROR: no emitter support for type ");
+                print_type(decl_symbol->type);
+                printf("\n" RESET);
+            }
+        }
+
+        if (n_local_bytes > 0)
+            emit("add2 sp : #-%i", n_local_bytes);
+    }
+
+    // Emit all statements
+    if (node->last_child != NULL && node->last_child->syntax == STATEMENT_LIST_SYNTAX) {
+        node = node->last_child->first_child;
+        while (node != NULL) {
+            emit_statement(node);
+            node = node->next;
+        }
+    }
+
+    // Pop locals
+    if (n_local_bytes > 0) 
+        emit("add2 sp : #%i", n_local_bytes);
+}
+
+/**
+ * Emit assembly for a statement 
+ * @param node the statement node
+ */
+void emit_statement(struct SyntaxNode *node) {
+    emit("lda #'Y'");
+    emit("jsr $9003");
+    emit("jsr $9006");
+}   
 
 
