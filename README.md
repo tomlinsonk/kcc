@@ -57,6 +57,12 @@ int main() {
 - `int`: 16-bit signed integer   
 - ...
 
+### Register layout
+Values are loaded in the following locations:
+#### First value
+- `char`: A register
+- `int`: A register (low byte), X register (high byte) 
+
 ### Function calling
 #### Stack 
 The CPU stack is only 256 bytes, so C function calling is implemented in a software stack with top at $5fff. This stack is referred to as the *C stack*. 
@@ -80,7 +86,8 @@ The callee places its return value in the following locations:
 
 The callee then pops its locals off the C stack, pops the return address - 1 off the stack, and jumps to the return address. The caller must then pop the arguments off the stack
 
-
 ### Entry and exit
 Every program must have function `int main()`. To enter the program, the executable performs the call `main()`. After this call completes, the executable issues a `brk` to return to the system monitor. The return code of the program is then accessible in A (low byte), X (high byte). 
 
+### Expressions
+For simplicity, all experessions are evaluated using the stack. Operands are pushed onto the stack (lhs then rhs) and then popped when an operator is evaluated. The result is then pushed back onto the stack, allowing easy evaluation of nested expressions.

@@ -13,13 +13,24 @@
 #include "types.h"
 #include "symbols.h"
 
+struct Label {
+    char *name;
+    struct Label *next;
+};
+
+
+struct Label *new_label();
+void free_labels();
 
 void emit_translation_unit(struct SyntaxNode *node);
 void emit_function_definition(struct SyntaxNode *node);
 void emit_compound_statement(struct SyntaxNode *node);
 void emit_statement(struct SyntaxNode *node);
+void emit_expression_statement(struct SyntaxNode *node);
+void emit_return_statement(struct SyntaxNode *node);
 
 void emit(char *str, ...);
-void emit_no_tab(char *str, ...);
+void emit_label(struct Label *label);
+void emit_named_label(char *name);
 
 #endif

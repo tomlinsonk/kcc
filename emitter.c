@@ -21,7 +21,11 @@
 #define BOLD_YELLOW "\033[1m\033[33m"
 #define RESET       "\033[0m"
 
-FILE *out;
+static FILE *out;
+static int n_labels = 0;
+static struct Label *head_label = NULL;
+static struct Label *tail_label = NULL;
+
 
 /**
  * Emit a (possibly formatted) string to out. Adds a tab before and a newline afterwards
@@ -39,16 +43,54 @@ void emit(char *str, ...) {
 
 
 /**
- * Emit a (possibly formatted) string to out. Adds a newline afterwards
- * @param str the string to print
- * @param ... an optional list of variables if str needs to be formatted
+ * Emit an assembly label
+ * @param label the label
  */
-void emit_no_tab(char *str, ...) {
-    va_list args;
-    va_start(args, str);
-    vfprintf(out, str, args);
-    va_end(args);
-    fputc('\n', out);
+void emit_label(struct Label *label) {
+    fprintf(out, "%s:\n", label->name);
+}
+
+/**
+ * Emit an assembly label with an explicit name
+ * @param name the name of the label
+ */
+void emit_named_label(char *name) {
+    fprintf(out, "%s:\n", name);
+}
+
+/**
+ * Make a new label _n (where n is the number of labels that exist already).
+ * Adds to the linked list of labels.
+ * Note: assumes there are fewer than 1 billion labels (seems ok)
+ * @return a pointer to the new Label
+ */
+struct Label *new_label() {
+    char *name = malloc(10 * sizeof(char));
+    struct Label *label = malloc(sizeof(struct Label));
+    sprintf(name, "_%i", n_labels++);
+    label->name = name;
+    label->next = NULL;
+
+    if (head_label == NULL) {
+        head_label = label;
+        tail_label = label;
+    } else {
+        tail_label->next = label;
+    }
+
+    return label;
+}
+
+/**
+ * Free all of the labels and their names
+ */
+void free_labels() {
+    while (head_label != NULL) {
+        tail_label = head_label->next;
+        free(head_label->name);
+        free(head_label);
+        head_label = tail_label;
+    }
 }
 
 
@@ -91,7 +133,7 @@ void emit_function_definition(struct SyntaxNode *node) {
     struct SyntaxNode *body = node->last_child;
 
     // Emit the function label
-    emit_no_tab("%s:", symbol->name);
+    emit_named_label(symbol->name);
 
     // TODO: handle arguments
 
@@ -154,9 +196,52 @@ void emit_compound_statement(struct SyntaxNode *node) {
  * @param node the statement node
  */
 void emit_statement(struct SyntaxNode *node) {
-    emit("lda #'Y'");
-    emit("jsr $9003");
-    emit("jsr $9006");
+    switch (node->syntax){
+    case EXPRESSION_STATEMENT_SYNTAX:
+        emit_expression_statement(node);
+        break;
+    case RETURN_STATEMENT_SYNTAX:
+        emit_return_statement(node);
+        break;
+    default:
+        printf(BOLD_RED "Error: can't emit statement kind %s" RESET, syntax_names[node->syntax]);
+        break;
+    }
 }   
+
+/**
+ * Emit assembly for an expression statement 
+ * @param node the expression statement node
+ */
+void emit_expression_statement(struct SyntaxNode *node) {
+    if (node->first_child != NULL) {
+        switch (node->first_child->syntax) {
+        case UNARY_EXPRESSION_SYNTAX:
+            // TODO
+            break;    
+        case BINARY_EXPRESSION_SYNTAX:
+            // TODO
+            break;
+        case PARENTHESIZED_EXPRESSION_SYNTAX:
+            // TODO
+            break;
+        case ASSIGNMENT_EXPRESSION_SYNTAX:
+            // TODO
+            break;
+        default:
+            printf(BOLD_RED "Error: can't emit expression kind %s" RESET, syntax_names[node->first_child->syntax]);
+            break;
+        }
+    }
+
+}
+
+/**
+ * Emit assembly for a return statement 
+ * @param node the return statement node
+ */
+void emit_return_statement(struct SyntaxNode *node) {
+    
+}
 
 

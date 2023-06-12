@@ -82,6 +82,7 @@ int main() {
     free_tree(root);
     free_tokens(head);
     free_symbol_table(symbol_table);
+    free_labels();
 
     return num_syntax_errors + num_semantic_errors;
 }
