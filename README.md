@@ -90,4 +90,7 @@ The callee then pops its locals off the C stack, pops the return address - 1 off
 Every program must have function `int main()`. To enter the program, the executable performs the call `main()`. After this call completes, the executable issues a `brk` to return to the system monitor. The return code of the program is then accessible in A (low byte), X (high byte). 
 
 ### Expressions
-For simplicity, all experessions are evaluated using the stack. Operands are pushed onto the stack (lhs then rhs) and then popped when an operator is evaluated. The result is then pushed back onto the stack, allowing easy evaluation of nested expressions.
+For simplicity, all expressions are evaluated using the stack. Operands are pushed onto the stack (lhs then rhs) and then popped when an operator is evaluated. The result is then pushed back onto the stack, allowing easy evaluation of nested expressions.
+
+## Known bugs
+- ~~Emitter not working for addition that overflows into top byte. Seems to be returning the correct low byte but taking the top byte of the first operand instead of the sum~~ I think fixed!   

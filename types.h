@@ -35,12 +35,13 @@ struct Type {
     };
     struct Type *next_param_type;
     int lvalue;
+    int bytes;
 };
 
-static struct Type INT_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_PRIMITIVE, .lvalue=0};
-static struct Type CHAR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=CHAR_PRIMITIVE, .lvalue=0};
-static struct Type VOID_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=VOID_PRIMITIVE, .lvalue=0};
-static struct Type ERROR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=ERROR_PRIMITIVE, .lvalue=0};
+static struct Type INT_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_PRIMITIVE, .lvalue=0, .bytes=2};
+static struct Type CHAR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=CHAR_PRIMITIVE, .lvalue=0, .bytes=1};
+static struct Type VOID_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=VOID_PRIMITIVE, .lvalue=0, .bytes=-1};
+static struct Type ERROR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=ERROR_PRIMITIVE, .lvalue=0, .bytes=-1};
 
 static struct Type CHAR_ARRAY_TYPE = {.kind=ARRAY_TYPE, .of_type=&CHAR_TYPE, .lvalue=0};
 static struct Type MAIN_FUNCTION_TYPE = {.kind=FUNCTION_TYPE, .return_type=&INT_TYPE, .lvalue=0};

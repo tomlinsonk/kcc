@@ -66,7 +66,21 @@ If no target is given, store the result in arg1
     sta _2byteNextArgument(target)
 }
 
+/* ------------------------------------------------
+Create an emulator breakpoint (for debugging)
+*/
+.pseudocommand @bpt {
+    .byte $bb
+}
+
+
 .label sp = $00
+// $01
+.label tmp = $02
+// $03
+.label ret = $04
+// $05
+
 .const stack_top = $5fff
 
 .segment Stack [virtual, start=$5000]

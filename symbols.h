@@ -11,10 +11,12 @@
 
 #include "types.h"
 
+
 struct Symbol {
     char *name;
     struct Type *type;
     struct Symbol *next;
+    int offset;
 };
 
 struct SymbolTable {
