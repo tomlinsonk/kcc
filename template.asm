@@ -76,10 +76,12 @@ Create an emulator breakpoint (for debugging)
 
 .label sp = $00
 // $01
-.label tmp = $02
+.label fp = $02
 // $03
-.label ret = $04
+.label tmp = $04
 // $05
+.label ret = $06
+// $07
 
 .const stack_top = $5fff
 
@@ -88,8 +90,18 @@ Create an emulator breakpoint (for debugging)
 
 .segment Code [outPrg="out.prg", start=$1000, min=$1000, max=$4fff]	
 
-_enter:
-    mov2 #stack_top : sp
+_enter:    
+    lda #>stack_top
+    sta sp+1
+    sta fp+1
+    lda #<stack_top
+    sta sp
+    sta fp
+
+    lda fp+1
+    jsr _push
+    lda fp
+    jsr _push
 
 	lda #(<(_exit-1))
 	jsr _push

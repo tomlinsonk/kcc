@@ -1,6 +1,6 @@
 # The KiT C Compiler
 This is a (WIP) C compiler designed for a specific 65C02 target: the KiT. The primary goal of this project is to learn how compilers work and get practice with C.
-It would be great to be able to write KiT programs in C and then compile then to 65C02 assembly, but I don't anticipate being able to write a complete C compiler.
+It would be great to be able to write KiT programs in C and then compile them to 65C02 assembly, but I don't anticipate being able to write a complete C compiler.
 I'll just keep expanding it until I'm happy with the state of the compiler.
 
 #### Milestone 1
@@ -65,16 +65,20 @@ Values are loaded in the following locations:
 
 ### Function calling
 #### Stack 
-The CPU stack is only 256 bytes, so C function calling is implemented in a software stack with top at $5fff. This stack is referred to as the *C stack*. 
+The CPU stack is only 256 bytes, so C function calling is implemented in a software stack with top at $5fff. This stack is referred to as the *C stack*. Two zero page pointers are used to store the stack pointer (sp) and frame pointer (fp). 
 
 #### Stack frames
 From top to bottom, a stack frame consists of:
-- arguments (if any) 1, 2, ..., *n*
-- return address - 1 high byte
-- return address - 1 low byte
-- callee locals
+1. arguments (if any) 1, 2, ..., *n*
+2. caller frame pointer high byte
+3. caller frame pointer low byte
+4. return address - 1 low byte
+5. return address - 1 high byte
+6. callee locals
 
-The first three bullets are set by the caller. Note that 1 is subtracted from the return address so that an `rts` can be used to jump to the correct return address.
+The first five bullets are set by the caller. Note that 1 is subtracted from the return address so that an `rts` can be used to jump to the correct return address.
+
+The frame pointer fp points to the current frame, starting at item 6 (callee locals). This is used to have a consistent offset to access locals. The current frame pointer is set by the callee when it is called.  
 
 #### Register use
 The A, X, Y and registers may all be overwritten by the callee.
@@ -84,7 +88,7 @@ The callee places its return value in the following locations:
 - `char`: A register
 - `int`: A register (low byte), X register (high byte) 
 
-The callee then pops its locals off the C stack, pops the return address - 1 off the stack, and jumps to the return address. The caller must then pop the arguments off the stack
+The callee then pops its locals off the C stack, pops the return address - 1 off the stack, restores the caller's frame pointer (popping it), and jumps to the return address. The caller must then pop the arguments off the stack. 
 
 ### Entry and exit
 Every program must have function `int main()`. To enter the program, the executable performs the call `main()`. After this call completes, the executable issues a `brk` to return to the system monitor. The return code of the program is then accessible in A (low byte), X (high byte). 

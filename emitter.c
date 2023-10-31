@@ -25,6 +25,8 @@ static FILE *out;
 static int n_labels = 0;
 static struct Label *head_label = NULL;
 static struct Label *tail_label = NULL;
+
+// TODO: don't want this to be external. should rework
 static int bytes_pushed = 0;
 
 
@@ -139,15 +141,27 @@ void emit_function_definition(struct SyntaxNode *node) {
 
     // TODO: handle arguments
 
+    // set frame pointer
+    emit("mov2 sp : fp");
+
     // Emit function body
     emit_compound_statement(node->last_child);
 
     // Return from the function
+
+    // pop return address off C stack and repare for rts
     emit("jsr _pop");
     emit("pha");
     emit("jsr _pop");
     emit("pha");
 
+    // restore frame pointer
+    emit("jsr _pop");
+    emit("sta fp");
+    emit("jsr _pop");
+    emit("sta fp+1");
+
+    // store return value in registers, if any
     if (symbol->type->return_type->bytes == 1) {
         emit("lda ret");
     } else if (symbol->type->return_type->bytes == 2) {
@@ -317,22 +331,26 @@ void emit_binary_expression(struct SyntaxNode *node) {
 
 /**
  * Emit assembly to push an identifier onto the stack
- * TODO: currently assumes offset is < 256; might not be
  * @param node the identifier node
  */
 void emit_identifier(struct SyntaxNode *node) {
     printf("emitting identifier. Bytes pushed before: %i\n", bytes_pushed);
     if (node->type->bytes == 1) {
-        emit("ldy #%i", 1 + node->symbol->offset + bytes_pushed);
-        emit("lda (sp),y");
+        emit("mov2 fp : tmp");
+        emit("add2 fp : #%i", node->symbol->offset + 1);
+        emit("lda (fp)");
         emit("jsr _push");
+        emit("mov2 tmp : fp");
         bytes_pushed += 1;
     } else if (node->type->bytes == 2) {
-        emit("ldy #%i", 2 + node->symbol->offset + bytes_pushed);
-        emit("lda (sp),y");
+        emit("mov2 fp : tmp");
+        emit("add2 fp : #%i", node->symbol->offset + 2);
+        emit("lda (fp)");
         emit("jsr _push");
-        emit("lda (sp),y");
+        emit("dec2 fp");
+        emit("lda (fp)");
         emit("jsr _push");
+        emit("mov2 tmp : fp");
         bytes_pushed += 2;
     }
 
@@ -343,7 +361,7 @@ void emit_identifier(struct SyntaxNode *node) {
 /**
  * Emit assembly for an assignmnet expression. Updates the value stored in the 
  * left hand side and leaves new value on top of the stack
- * TODO: assumes offset is < 256. Should fix eventually
+ * TODO: assumes offset is < 256. Should fix and use frame pointer instead of sp
  * @param node the assignment expression node
  */
 void emit_assignment_expression(struct SyntaxNode *node) {
