@@ -22,20 +22,23 @@ This will require a few basic features:
 3. ~~Parsing function definitions (skip parameters for now) and return statements~~ 
 4. ~~Binding function names~~ 
 5. ~~Typechecking function return type~~ 
-6. Emitting 6502 assembly
-    - Heap and stack allocation
-    - Integer constants
-    - Assignment
-    - Addition
-    - Return
+6. ~~Emitting 6502 assembly~~
+    - ~~Stack allocation~~
+    - ~~Integer constants~~
+    - ~~Assignment~~
+    - ~~Addition~~
+    - ~~Return~~
 
 
 #### Milestone 2
 Once I can compile and run the barebones program above, I want to focus on adding control flow. The next program I'll work towards compiling counts the length of the Collatz sequence starting at 27, which should return 111:
 ```C
 int main() {
-    int n = 27;
-    int i = 0;
+    int n;
+    int i;
+
+    n = 27;
+    i = 0;
 
     while (n != 1) {
         i++;
@@ -49,6 +52,13 @@ int main() {
     return i;
 }
 ```
+
+Steps towards Milestone 2. Need to be able to emit:
+1. Comparisons == and !=
+2. Unary operators ++ and --
+3. Bitshifts >> and <<
+4. If () else () conditionals
+5. While loops
 
 ## Design details
 

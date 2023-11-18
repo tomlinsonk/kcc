@@ -26,9 +26,6 @@ static int n_labels = 0;
 static struct Label *head_label = NULL;
 static struct Label *tail_label = NULL;
 
-// TODO: don't want this to be external. should rework
-static int bytes_pushed = 0;
-
 
 
 /**
@@ -187,9 +184,8 @@ void emit_compound_statement(struct SyntaxNode *node) {
         struct Symbol *decl_symbol;
         for (struct SyntaxNode *declaration = node->first_child->first_child; declaration != NULL; declaration = declaration->next) {
             decl_symbol = declaration->last_child->symbol;
-            bytes_pushed += decl_symbol->type->bytes;
             n_local_bytes += decl_symbol->type->bytes;
-            decl_symbol->offset = -bytes_pushed;
+            decl_symbol->offset = -n_local_bytes;
         }
 
         if (n_local_bytes > 0)
@@ -208,7 +204,6 @@ void emit_compound_statement(struct SyntaxNode *node) {
     // Pop locals
     if (n_local_bytes > 0) {
         emit("add2 sp : #%i", n_local_bytes);
-        bytes_pushed -= n_local_bytes;
     }
 }
 
@@ -236,15 +231,9 @@ void emit_statement(struct SyntaxNode *node) {
  * @param node the expression statement node
  */
 void emit_expression_statement(struct SyntaxNode *node) {
-    int bytes_pushed_before = bytes_pushed;
-
     if (node->first_child != NULL) {
         emit_expression(node->first_child);
         emit("add2 sp : #%i", node->first_child->type->bytes);
-        bytes_pushed -= node->first_child->type->bytes;
-
-        if (bytes_pushed != bytes_pushed_before)
-            printf(BOLD_RED "Error: bytes pushed is %i, before was %i.\n" RESET, bytes_pushed, bytes_pushed_before);
     }
 }
 
@@ -275,7 +264,6 @@ void emit_expression(struct SyntaxNode *node) {
         emit("jsr _push");
         emit("lda #<%i", node->token->int_value);
         emit("jsr _push");
-        bytes_pushed += 2;
         break;
     default:
         printf(BOLD_RED "Error: can't emit expression kind %s\n" RESET, syntax_names[node->syntax]);
@@ -313,15 +301,16 @@ void emit_binary_expression(struct SyntaxNode *node) {
             emit("lda tmp+1");
             emit("adc (sp),y");
             emit("sta (sp),y");
-            bytes_pushed -= 2;
         } else if (node->type->bytes == 1) {
             emit("jsr _pop");
             emit("ldy #1");
             emit("clc");
             emit("adc (sp),y");
             emit("sta (sp),y");
-            bytes_pushed -= 1;
         }
+        break;
+    case DOUBLE_EQUALS_TOKEN:
+        // TODO
         break;
     default:
         printf(BOLD_RED "Error: can't emit binary operator %s\n" RESET, token_kind_names[node->token->kind]);
@@ -334,54 +323,48 @@ void emit_binary_expression(struct SyntaxNode *node) {
  * @param node the identifier node
  */
 void emit_identifier(struct SyntaxNode *node) {
-    printf("emitting identifier. Bytes pushed before: %i\n", bytes_pushed);
     if (node->type->bytes == 1) {
         emit("mov2 fp : tmp");
-        emit("add2 fp : #%i", node->symbol->offset + 1);
-        emit("lda (fp)");
+        emit("add2 tmp : #%i", node->symbol->offset + 1);
+        emit("lda (tmp)");
         emit("jsr _push");
-        emit("mov2 tmp : fp");
-        bytes_pushed += 1;
     } else if (node->type->bytes == 2) {
         emit("mov2 fp : tmp");
-        emit("add2 fp : #%i", node->symbol->offset + 2);
-        emit("lda (fp)");
+        emit("add2 tmp : #%i", node->symbol->offset + 2);
+        emit("lda (tmp)");
         emit("jsr _push");
-        emit("dec2 fp");
-        emit("lda (fp)");
+        emit("dec2 tmp");
+        emit("lda (tmp)");
         emit("jsr _push");
-        emit("mov2 tmp : fp");
-        bytes_pushed += 2;
     }
-
-    printf("emitted identifier. Bytes pushed after: %i\n", bytes_pushed);
 } 
 
 
 /**
- * Emit assembly for an assignmnet expression. Updates the value stored in the 
- * left hand side and leaves new value on top of the stack
- * TODO: assumes offset is < 256. Should fix and use frame pointer instead of sp
+ * Emit assembly for an assignment expression. Updates the value stored in the 
+ * left hand side  and leaves new value on top of the stack
  * @param node the assignment expression node
  */
 void emit_assignment_expression(struct SyntaxNode *node) {
     emit_expression(node->last_child);
 
     if (node->type->bytes == 1) {
+        emit("mov2 fp : tmp");
+        emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
         emit("ldy #1");
         emit("lda (sp),y");
-        emit("ldy #%i", 1 + node->first_child->symbol->offset + bytes_pushed);
-        emit("sta (sp),y");
+        emit("sta (tmp)");
     } else if (node->type->bytes == 2) {
+        emit("mov2 fp : tmp");
+        emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
         emit("ldy #1");
         emit("lda (sp),y");
-        emit("ldy #%i", 1 + node->first_child->symbol->offset + bytes_pushed);
-        emit("sta (sp),y");
+        emit("sta (tmp)");
 
-        emit("ldy #2");
+        emit("inc2 tmp");
+        emit("iny");
         emit("lda (sp),y");
-        emit("ldy #%i", 2 + node->first_child->symbol->offset + bytes_pushed);
-        emit("sta (sp),y");
+        emit("sta (tmp)");
     }
 }
 
