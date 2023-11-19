@@ -44,6 +44,23 @@ void emit(char *str, ...) {
 
 
 /**
+ * Add a comment to the emitted assembly indicating the start of named chunk
+ * @param str the name for the chunk
+*/
+void start_chunk(char *name) {
+    fprintf(out, "// START %s\n", name);
+}
+
+/**
+ * Add a comment to the emitted assembly indicating the end of named chunk
+ * @param str the name for the chunk
+*/
+void end_chunk(char *name) {
+    fprintf(out, "// END %s\n", name);
+}
+
+
+/**
  * Emit an assembly label
  * @param label the label
  */
@@ -132,6 +149,8 @@ void emit_translation_unit(struct SyntaxNode *root) {
 void emit_function_definition(struct SyntaxNode *node) {
     struct Symbol *symbol = node->symbol;
     struct SyntaxNode *body = node->last_child;
+    
+    start_chunk("function setup");
 
     // Emit the function label
     emit_named_label(symbol->name);
@@ -141,10 +160,14 @@ void emit_function_definition(struct SyntaxNode *node) {
     // set frame pointer
     emit("mov2 sp : fp");
 
+    end_chunk("function setup");
+
+
     // Emit function body
     emit_compound_statement(node->last_child);
 
     // Return from the function
+    start_chunk("function cleanup");
 
     // pop return address off C stack and repare for rts
     emit("jsr _pop");
@@ -167,6 +190,8 @@ void emit_function_definition(struct SyntaxNode *node) {
     }
 
     emit("rts");
+    end_chunk("function cleanup");
+
 }
 
 
@@ -260,10 +285,12 @@ void emit_expression(struct SyntaxNode *node) {
         emit_identifier(node);
         break;
     case INT_CONSTANT_SYNTAX:
+        start_chunk("int constant");
         emit("lda #>%i", node->token->int_value);
         emit("jsr _push");
         emit("lda #<%i", node->token->int_value);
         emit("jsr _push");
+        end_chunk("int constant");
         break;
     default:
         printf(BOLD_RED "Error: can't emit expression kind %s\n" RESET, syntax_names[node->syntax]);
@@ -283,10 +310,16 @@ void emit_expression(struct SyntaxNode *node) {
  */
 void emit_binary_expression(struct SyntaxNode *node) {
     emit_expression(node->first_child);
+    if (!types_match(node->first_child->type, node->type))
+        emit_type_conversion(node->first_child->type, node->type);
+
     emit_expression(node->last_child);
+    if (!types_match(node->last_child->type, node->type))
+        emit_type_conversion(node->last_child->type, node->type);
     
     switch (node->token->kind) {
     case PLUS_TOKEN:
+        start_chunk("+ exression");
         if (node->type->bytes == 2) {
             emit("jsr _pop");
             emit("sta tmp");
@@ -308,9 +341,12 @@ void emit_binary_expression(struct SyntaxNode *node) {
             emit("adc (sp),y");
             emit("sta (sp),y");
         }
+        end_chunk("+ exression");
         break;
     case DOUBLE_EQUALS_TOKEN:
+        start_chunk("== exression");
         // TODO
+        end_chunk("+ exression");
         break;
     default:
         printf(BOLD_RED "Error: can't emit binary operator %s\n" RESET, token_kind_names[node->token->kind]);
@@ -323,6 +359,8 @@ void emit_binary_expression(struct SyntaxNode *node) {
  * @param node the identifier node
  */
 void emit_identifier(struct SyntaxNode *node) {
+    start_chunk("identifier");
+
     if (node->type->bytes == 1) {
         emit("mov2 fp : tmp");
         emit("add2 tmp : #%i", node->symbol->offset + 1);
@@ -337,6 +375,7 @@ void emit_identifier(struct SyntaxNode *node) {
         emit("lda (tmp)");
         emit("jsr _push");
     }
+    end_chunk("identifier");
 } 
 
 
@@ -351,6 +390,8 @@ void emit_assignment_expression(struct SyntaxNode *node) {
     if (!types_match(node->type, node->last_child->type)) 
         emit_type_conversion(node->last_child->type, node->type);
 
+    start_chunk("assignment");
+
     emit("mov2 fp : tmp");
     emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
     emit("ldy #1");
@@ -363,6 +404,9 @@ void emit_assignment_expression(struct SyntaxNode *node) {
         emit("lda (sp),y");
         emit("sta (tmp)");
     }
+
+    end_chunk("assignment");
+
 }
 
 
@@ -375,13 +419,20 @@ void emit_return_statement(struct SyntaxNode *node) {
     if (node->first_child != NULL) {
         emit_expression(node->first_child);
 
+        if (!types_match(node->first_child->type, node->type))
+            emit_type_conversion(node->first_child->type, node->type);
+
+        start_chunk("return");
+
         emit("jsr _pop");
         emit("sta ret");
 
-        if (node->first_child->type->bytes == 2) {
+        if (node->type->bytes == 2) {
             emit("jsr _pop");
             emit("sta ret+1");
         }
+
+        end_chunk("return");
     }
     
 }
@@ -394,6 +445,8 @@ void emit_return_statement(struct SyntaxNode *node) {
  * @param to_type the type to convert to.
 */
 void emit_type_conversion(struct Type *from_type, struct Type *to_type) {
+    start_chunk("type convert");
+
     if (types_match(from_type, &INT_TYPE) && types_match(to_type, &CHAR_TYPE)) {
         emit("jsr _pop");
         emit("sta tmp");
@@ -415,5 +468,6 @@ void emit_type_conversion(struct Type *from_type, struct Type *to_type) {
         printf("\n" RESET);
     }
 
+    end_chunk("type convert");
 }
 

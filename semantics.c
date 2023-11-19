@@ -170,14 +170,9 @@ void typecheck_binary_expression(struct SyntaxNode *root, struct SymbolTable *sy
     typecheck(root->first_child, symbol_table);
     typecheck(root->last_child, symbol_table);
 
-    root->type = root->first_child->type;
-
-    // TODO: method to check binary operator compatibility
-    if (types_match(root->first_child->type, root->last_child->type)) {
-        root->type = root->first_child->type;
-    } else {
-        root->type = &ERROR_TYPE;
-
+    root->type = get_binary_expression_type(root->first_child->type, root->last_child->type);
+    
+    if (types_match(root->type, &ERROR_TYPE)) {
         printf(BOLD_RED "Error: binary operator %s is not applicable to types ",  token_kind_names[root->token->kind]);
         print_type(root->first_child->type);
         printf(" and ");
@@ -251,9 +246,10 @@ void typecheck_unary_expression(struct SyntaxNode *root, struct SymbolTable *sym
  */
 void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     struct Type *return_type = get_enclosing_function_return_type(root);
+    root->type = return_type;
     typecheck(root->first_child, symbol_table);
 
-    if (!types_match(return_type, root->first_child->type)) {
+    if (!types_match(return_type, root->first_child->type) && !can_autoconvert(root->first_child->type, return_type)) {
         printf(BOLD_RED "Error: trying to return ");
         print_type(root->first_child->type);
         printf(", but declared return type is ");

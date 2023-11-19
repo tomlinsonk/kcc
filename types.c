@@ -72,6 +72,15 @@ int types_match(struct Type *t1, struct Type *t2) {
     }
 }
 
+/**
+ * Check if a type is numeric. So far, only char and int.
+ * @param t the type to check
+ * @return 1 if the type is numeric, else 0
+*/
+int is_numeric(struct Type *t) {
+    return (t->kind == PRIMITIVE_TYPE) && (t->primitive == INT_PRIMITIVE || t->primitive == CHAR_PRIMITIVE);
+}
+
 
 /**
  * Allocate a new type of the given kind
@@ -105,4 +114,24 @@ int can_autoconvert(struct Type *from_type, struct Type *to_type) {
     }
 
     return 0;
+}
+
+
+/**
+ * Find the type of a binary expression with operands of two (possibly different) type.
+ * The type of the expression is the type of the operand with higher rank. 
+ * For now, ranks are simple:
+ * char < int 
+ * @param t1 the type of the first operand
+ * @param t2 the tpye of the second operand
+ * @return the type of the expression t1 [op] t2
+*/
+struct Type *get_binary_expression_type(struct Type *t1, struct Type *t2) {
+    if (!(is_numeric(t1) && is_numeric(t2)))
+        return &ERROR_TYPE;
+
+    if (t1->primitive == INT_PRIMITIVE || t2->primitive == INT_PRIMITIVE)
+        return &INT_TYPE;
+    else
+        return &CHAR_TYPE; 
 }

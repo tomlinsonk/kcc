@@ -52,5 +52,7 @@ void print_type(struct Type *type);
 struct Type *new_type(enum TypeKind kind);
 int types_match(struct Type *t1, struct Type *t2);
 int can_autoconvert(struct Type *from_type, struct Type *to_type);
+struct Type *get_binary_expression_type(struct Type *t1, struct Type *t2);
+int is_numeric(struct Type *t);
 
 #endif
