@@ -342,25 +342,22 @@ void emit_identifier(struct SyntaxNode *node) {
 
 /**
  * Emit assembly for an assignment expression. Updates the value stored in the 
- * left hand side  and leaves new value on top of the stack
+ * left hand side and leaves new value on top of the stack
  * @param node the assignment expression node
  */
 void emit_assignment_expression(struct SyntaxNode *node) {
     emit_expression(node->last_child);
 
-    if (node->type->bytes == 1) {
-        emit("mov2 fp : tmp");
-        emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
-        emit("ldy #1");
-        emit("lda (sp),y");
-        emit("sta (tmp)");
-    } else if (node->type->bytes == 2) {
-        emit("mov2 fp : tmp");
-        emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
-        emit("ldy #1");
-        emit("lda (sp),y");
-        emit("sta (tmp)");
+    if (!types_match(node->type, node->last_child->type)) 
+        emit_type_conversion(node->last_child->type, node->type);
 
+    emit("mov2 fp : tmp");
+    emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
+    emit("ldy #1");
+    emit("lda (sp),y");
+    emit("sta (tmp)");
+
+    if (node->type->bytes == 2) {
         emit("inc2 tmp");
         emit("iny");
         emit("lda (sp),y");
@@ -389,4 +386,34 @@ void emit_return_statement(struct SyntaxNode *node) {
     
 }
 
+
+/**
+ * Emit assembly for converting the value on top of the stack from one type to another.
+ * Pushes/pops from the stack as necessary if the types have different byte lengths
+ * @param from_type the type of the current value on top of the stack
+ * @param to_type the type to convert to.
+*/
+void emit_type_conversion(struct Type *from_type, struct Type *to_type) {
+    if (types_match(from_type, &INT_TYPE) && types_match(to_type, &CHAR_TYPE)) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("lda tmp");
+        emit("jsr _push");
+    } else if (types_match(from_type, &CHAR_TYPE) && types_match(to_type, &INT_TYPE)) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("lda #0");
+        emit("jsr _push");
+        emit("lda tmp");
+        emit("jsr _push");
+    } else {
+        printf(BOLD_RED "Error: No emitter support for conversion from type ");
+        print_type(from_type);
+        printf(" to type ");
+        print_type(to_type);
+        printf("\n" RESET);
+    }
+
+}
 

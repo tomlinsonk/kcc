@@ -96,7 +96,6 @@ int main_exists(struct SymbolTable *symbol_table) {
 }
 
 
-
 /**
  * Recursively typecheck a syntax tree. Annotates the nodes with their types.
  * Also logs the number of type errors encountered in num_type_errors
@@ -173,7 +172,7 @@ void typecheck_binary_expression(struct SyntaxNode *root, struct SymbolTable *sy
 
     root->type = root->first_child->type;
 
-    // TODO: method to check if binary operator is applicable to types
+    // TODO: method to check binary operator compatibility
     if (types_match(root->first_child->type, root->last_child->type)) {
         root->type = root->first_child->type;
     } else {
@@ -189,6 +188,9 @@ void typecheck_binary_expression(struct SyntaxNode *root, struct SymbolTable *sy
     }
 }
 
+
+
+
 /**
  * Verify that an assignment expression has valid types
  * @param root a pointer to the assignment expression node 
@@ -203,8 +205,9 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
         num_semantic_errors++;
     }
 
-    // TODO: method to check if assignment operator is applicable
     if (types_match(root->first_child->type, root->last_child->type)) {
+        root->type = root->first_child->type;
+    } else if (can_autoconvert(root->last_child->type, root->first_child->type)) {
         root->type = root->first_child->type;
     } else {
         root->type = &ERROR_TYPE;

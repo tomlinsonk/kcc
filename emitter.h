@@ -40,4 +40,6 @@ void emit(char *str, ...);
 void emit_label(struct Label *label);
 void emit_named_label(char *name);
 
+void emit_type_conversion(struct Type *from_type, struct Type *to_type);
+
 #endif

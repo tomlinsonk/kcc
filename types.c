@@ -84,3 +84,25 @@ struct Type *new_type(enum TypeKind kind) {
 
     return type;
 } 
+
+
+/**
+ * Check if we can automatically convert one type into another (e.g., for binary expressions).
+ * Assumes from_type and to_type are different (i.e., can't "autoconvert" from int to int);
+ * the caller is responsible for ensuring this holds.
+ * @param from_type the type we want to convert from
+ * @param to_type the type we want to convert to
+ * @return 1 if we can convert from_type to to_type, otherwise 0
+*/
+int can_autoconvert(struct Type *from_type, struct Type *to_type) {
+    switch (from_type->kind) {
+    case PRIMITIVE_TYPE:
+        if ((from_type->primitive == INT_PRIMITIVE && to_type->primitive == CHAR_PRIMITIVE) 
+         || (from_type->primitive == CHAR_PRIMITIVE && to_type->primitive == INT_PRIMITIVE)
+        ) return 1;
+    default:
+        break;
+    }
+
+    return 0;
+}
