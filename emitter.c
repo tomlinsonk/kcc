@@ -302,8 +302,8 @@ void emit_expression(struct SyntaxNode *node) {
 
 /**
  * Emit assembly for a binary expression. The expression is evaluated in these stages: 
- * 1) evaluate the left operand, which pushes the value onto the stack
- * 2) evaluate the right operand, which pushes the value onto the stack
+ * 1) evaluate the left operand, which pushes the value onto the stack. Convert type if needed.
+ * 2) evaluate the right operand, which pushes the value onto the stack. Convert type if needed.
  * 3) pop the operands off the stack and compute this expression's value
  * 4) push the value of the binary expression onto the stack
  * @param node the binary expression node
@@ -344,9 +344,49 @@ void emit_binary_expression(struct SyntaxNode *node) {
         end_chunk("+ exression");
         break;
     case DOUBLE_EQUALS_TOKEN:
-        start_chunk("== exression");
-        // TODO
-        end_chunk("+ exression");
+        start_chunk("== expression");
+        struct Label *not_equal_label = new_label();
+        struct Label *done_label = new_label();
+        if (node->type->bytes == 1) {
+            emit("jsr _pop");
+            emit("sta tmp");
+            emit("jsr _pop");
+            emit("cmp tmp");
+            emit("bne %s", not_equal_label->name);
+            emit("lda #1");
+            emit("jmp %s", done_label->name);
+
+            emit_label(not_equal_label);
+            emit("lda #0");
+
+            emit_label(done_label);
+            emit("jsr _push");
+        } else if (node->type->bytes == 2) {
+            emit("jsr _pop");
+            emit("sta tmp");
+            emit("jsr _pop");
+            emit("sta tmp+1");
+            emit("jsr _pop");
+            emit("tax");
+            emit("jsr _pop");
+
+            emit("cpx tmp");
+            emit("bne %s", not_equal_label->name);
+            emit("cmp tmp+1");
+            emit("bne %s", not_equal_label->name);
+            emit("lda #0");
+            emit("jsr _push");
+            emit("lda #1");
+            emit("jmp %s", done_label->name);
+
+            emit_label(not_equal_label);
+            emit("lda #0");
+            emit("jsr _push");
+            emit("lda #0");
+            emit_label(done_label);
+            emit("jsr _push");
+        }
+        end_chunk("== expression");
         break;
     default:
         printf(BOLD_RED "Error: can't emit binary operator %s\n" RESET, token_kind_names[node->token->kind]);
