@@ -319,80 +319,113 @@ void emit_binary_expression(struct SyntaxNode *node) {
     
     switch (node->token->kind) {
     case PLUS_TOKEN:
-        start_chunk("+ exression");
-        if (node->type->bytes == 2) {
-            emit("jsr _pop");
-            emit("sta tmp");
-            emit("jsr _pop");
-            emit("sta tmp+1");
-            emit("ldy #1");
-            emit("clc");
-            emit("lda tmp");
-            emit("adc (sp),y");
-            emit("sta (sp),y");
-            emit("iny");
-            emit("lda tmp+1");
-            emit("adc (sp),y");
-            emit("sta (sp),y");
-        } else if (node->type->bytes == 1) {
-            emit("jsr _pop");
-            emit("ldy #1");
-            emit("clc");
-            emit("adc (sp),y");
-            emit("sta (sp),y");
-        }
-        end_chunk("+ exression");
+        emit_plus_binary_expression(node);
         break;
     case DOUBLE_EQUALS_TOKEN:
-        start_chunk("== expression");
-        struct Label *not_equal_label = new_label();
-        struct Label *done_label = new_label();
-        if (node->type->bytes == 1) {
-            emit("jsr _pop");
-            emit("sta tmp");
-            emit("jsr _pop");
-            emit("cmp tmp");
-            emit("bne %s", not_equal_label->name);
-            emit("lda #1");
-            emit("jmp %s", done_label->name);
-
-            emit_label(not_equal_label);
-            emit("lda #0");
-
-            emit_label(done_label);
-            emit("jsr _push");
-        } else if (node->type->bytes == 2) {
-            emit("jsr _pop");
-            emit("sta tmp");
-            emit("jsr _pop");
-            emit("sta tmp+1");
-            emit("jsr _pop");
-            emit("tax");
-            emit("jsr _pop");
-
-            emit("cpx tmp");
-            emit("bne %s", not_equal_label->name);
-            emit("cmp tmp+1");
-            emit("bne %s", not_equal_label->name);
-            emit("lda #0");
-            emit("jsr _push");
-            emit("lda #1");
-            emit("jmp %s", done_label->name);
-
-            emit_label(not_equal_label);
-            emit("lda #0");
-            emit("jsr _push");
-            emit("lda #0");
-            emit_label(done_label);
-            emit("jsr _push");
-        }
-        end_chunk("== expression");
+        emit_double_equals_binary_expression(node);
+        break;
+    case BANG_EQUALS_TOKEN:
+        emit_bang_equals_binary_expression(node);
         break;
     default:
         printf(BOLD_RED "Error: can't emit binary operator %s\n" RESET, token_kind_names[node->token->kind]);
         break;
     }
 }
+
+
+/**
+ * Emit assembly for an addition expression
+ * @param node the expression node
+*/
+void emit_plus_binary_expression(struct SyntaxNode *node) {
+    start_chunk("+ exression");
+    if (node->type->bytes == 2) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("ldy #1");
+        emit("clc");
+        emit("lda tmp");
+        emit("adc (sp),y");
+        emit("sta (sp),y");
+        emit("iny");
+        emit("lda tmp+1");
+        emit("adc (sp),y");
+        emit("sta (sp),y");
+    } else if (node->type->bytes == 1) {
+        emit("jsr _pop");
+        emit("ldy #1");
+        emit("clc");
+        emit("adc (sp),y");     
+        emit("sta (sp),y");
+    }
+    end_chunk("+ exression");
+}
+
+
+/**
+ * Emit assembly for an == comparison expression
+ * @param node the syntax node of the expreesion
+*/
+void emit_double_equals_binary_expression(struct SyntaxNode *node) {
+    start_chunk("== expression");
+    struct Label *not_equal_label = new_label();
+    struct Label *done_label = new_label();
+    if (node->type->bytes == 1) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("cmp tmp");
+        emit("bne %s", not_equal_label->name);
+        emit("lda #1");
+        emit("jmp %s", done_label->name);
+
+        emit_label(not_equal_label);
+        emit("lda #0");
+
+        emit_label(done_label);
+        emit("jsr _push");
+    } else if (node->type->bytes == 2) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("jsr _pop");
+        emit("tax");
+        emit("jsr _pop");
+
+        emit("cpx tmp");
+        emit("bne %s", not_equal_label->name);
+        emit("cmp tmp+1");
+        emit("bne %s", not_equal_label->name);
+        emit("lda #0");
+        emit("jsr _push");
+        emit("lda #1");
+        emit("jmp %s", done_label->name);
+
+        emit_label(not_equal_label);
+        emit("lda #0");
+        emit("jsr _push");
+        emit("lda #0");
+        emit_label(done_label);
+        emit("jsr _push");
+    }
+    end_chunk("== expression");
+}
+
+
+/**
+ * Emit assembly for an != comparison expression
+ * @param node the syntax node of the expreesion
+*/
+void emit_bang_equals_binary_expression(struct SyntaxNode *node) {
+    start_chunk("!= expression");
+    // TODO
+    end_chunk("!= expression");
+}
+
 
 /**
  * Emit assembly to push an identifier onto the stack
