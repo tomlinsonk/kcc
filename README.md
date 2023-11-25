@@ -31,7 +31,7 @@ This will require a few basic features:
 
 
 #### Milestone 2
-Once I can compile and run the barebones program above, I want to focus on adding control flow. The next program I'll work towards compiling counts the length of the Collatz sequence starting at 27, which should return 111:
+Once I can compile and run the barebones program above, I want to focus on adding control flow. The next program I'll work towards compiling counts the length of the Collatz sequence starting at 27 ($1b), which should return 111 ($6f):
 ```C
 int main() {
     int n;
@@ -54,7 +54,7 @@ int main() {
 ```
 
 Steps towards Milestone 2. Need to be able to emit:
-1. Comparisons == and !=
+1. ~~Comparisons == and !=~~
 2. Unary operators ++ and --
 3. Bitshifts >> and <<
 4. If () else () conditionals

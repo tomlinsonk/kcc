@@ -12,7 +12,7 @@
 
 static const char *token_kind_names[] = {
     "INT", "STRING", 
-    "+", "-", "*", "/", "%", 
+    "+", "-", "*", "/", "%", "++", "--",
     "~", "|", "&", "^", ">>", "<<",
     "!", "||", "&&",
     "==", "!=", ">", "<", ">=", "<=",
@@ -33,6 +33,8 @@ enum TokenKind {
     STAR_TOKEN,
     SLASH_TOKEN,
     PERCENT_TOKEN,
+    PLUS_PLUS_TOKEN,
+    MINUS_MINUS_TOKEN,
 
     // Bitwise operators
     TILDE_TOKEN,

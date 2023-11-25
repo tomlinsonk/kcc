@@ -247,9 +247,17 @@ struct Token *lex(char input[]) {
                     break;
                 case '+':
                     new_token->kind = PLUS_TOKEN;
+                    if (input[i+1] == '+') {
+                        new_token->length = 2;
+                        new_token->kind = PLUS_PLUS_TOKEN;
+                    }
                     break;
                 case '-':
                     new_token->kind = MINUS_TOKEN;
+                    if (input[i+1] == '-') {
+                        new_token->length = 2;
+                        new_token->kind = MINUS_MINUS_TOKEN;
+                    }
                     break;
                 case '&':
                     new_token->kind = AMPERSAND_TOKEN;

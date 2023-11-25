@@ -65,6 +65,7 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     case UNARY_EXPRESSION_SYNTAX:
     case ASSIGNMENT_EXPRESSION_SYNTAX:
     case DECLARATION_SPECIFIER_SYNTAX:
+    case POSTFIX_EXPRESSION_SYNTAX:
         printf(" %s", token_kind_names[root->token->kind]);
         break;
     case IDENTIFIER_SYNTAX:
@@ -568,7 +569,7 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
 }
 
 /**
- * Parse a primary expression with zero or more unary operators
+ * Parse an expression with zero or more unary operators
  * @return a pointer to the expression node
  */
 struct SyntaxNode *parse_unary_expression() {
@@ -579,7 +580,25 @@ struct SyntaxNode *parse_unary_expression() {
         cur_token = cur_token->next;
         add_syntax_child(node, parse_unary_expression());
     } else {
-        node = parse_primary_expression();
+        node = parse_postfix_expression();
+    }
+
+    return node;
+}
+
+/**
+ * Parse a primary expression with zero or more postfix operators. 
+ * @return a pointer to the expression node
+*/
+struct SyntaxNode *parse_postfix_expression() {
+    struct SyntaxNode *node = parse_primary_expression();
+    struct SyntaxNode *new_node;
+
+    while (cur_token->kind == PLUS_PLUS_TOKEN || cur_token->kind == MINUS_MINUS_TOKEN) {
+        new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
+        cur_token = cur_token->next;
+        add_syntax_child(new_node, node);
+        node = new_node;
     }
 
     return node;

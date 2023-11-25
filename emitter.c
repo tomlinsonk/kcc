@@ -370,9 +370,10 @@ void emit_plus_binary_expression(struct SyntaxNode *node) {
  * @param node the syntax node of the expreesion
 */
 void emit_double_equals_binary_expression(struct SyntaxNode *node) {
-    start_chunk("== expression");
     struct Label *not_equal_label = new_label();
     struct Label *done_label = new_label();
+
+    start_chunk("== expression");
     if (node->type->bytes == 1) {
         emit("jsr _pop");
         emit("sta tmp");
@@ -421,8 +422,15 @@ void emit_double_equals_binary_expression(struct SyntaxNode *node) {
  * @param node the syntax node of the expreesion
 */
 void emit_bang_equals_binary_expression(struct SyntaxNode *node) {
+    struct Label *not_equal_label = new_label();
+    struct Label *done_label = new_label();
+
     start_chunk("!= expression");
-    // TODO
+    emit_double_equals_binary_expression(node);
+    emit("ldy #1");
+    emit("lda #1");
+    emit("eor (sp),y");
+    emit("sta (sp),y");
     end_chunk("!= expression");
 }
 

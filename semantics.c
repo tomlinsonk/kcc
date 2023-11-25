@@ -116,6 +116,9 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case UNARY_EXPRESSION_SYNTAX:
         typecheck_unary_expression(root, symbol_table);
         break;
+    case POSTFIX_EXPRESSION_SYNTAX:
+        typecheck_postfix_expression(root, symbol_table);
+        break;
     case RETURN_STATEMENT_SYNTAX:
         typecheck_return_statement(root, symbol_table);
         break;
@@ -218,6 +221,27 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
 }
 
 /**
+ * Verify that a postfix expression has a valid type
+ * @param root a pointer to the postfix expression node 
+ * @param symbol_table a pointer to the current scope's symbol table
+ */
+void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
+    typecheck(root->first_child, symbol_table);
+
+    if (is_numeric(root->first_child->type)) {
+        root->type = root->first_child->type;
+    } else {
+        root->type = &ERROR_TYPE;
+        
+        printf(BOLD_RED "Error: postfix operator %s is not applicable to type ",  token_kind_names[root->token->kind]);
+        print_type(root->first_child->type);
+        printf("\n" RESET);
+
+        num_semantic_errors++;
+    }
+}
+
+/**
  * Verify that a unary expression has a valid type
  * @param root a pointer to the unary expression node 
  * @param symbol_table a pointer to the current scope's symbol table
@@ -225,8 +249,7 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
 void typecheck_unary_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     typecheck(root->first_child, symbol_table);
 
-    // TODO: method to check if unary operator is applicable to type
-    if (types_match(root->first_child->type, &INT_TYPE)) {
+    if (is_numeric(root->first_child->type)) {
         root->type = root->first_child->type;
     } else {
         root->type = &ERROR_TYPE;
