@@ -271,6 +271,9 @@ void emit_expression(struct SyntaxNode *node) {
     switch (node->syntax) {
     case UNARY_EXPRESSION_SYNTAX:
         // TODO
+        break;
+    case POSTFIX_EXPRESSION_SYNTAX:
+        emit_postfix_expression(node);
         break;    
     case BINARY_EXPRESSION_SYNTAX:
         emit_binary_expression(node);
@@ -491,6 +494,75 @@ void emit_assignment_expression(struct SyntaxNode *node) {
 }
 
 
+/**
+ * Emit assembly for a postfix expression
+ * @param node the postfix expression syntax node
+*/
+void emit_postfix_expression(struct SyntaxNode *node) {
+    switch (node->token->kind) {
+    case PLUS_PLUS_TOKEN:
+        emit_plus_plus_postfix_expression(node);
+        break;
+    case MINUS_MINUS_TOKEN:
+        emit_minus_minus_postfix_expression(node);
+        break;
+    default:
+        printf(BOLD_RED "Error: can't emit postfix operator %s" RESET, token_kind_names[node->token->kind]);
+        break;
+    }
+}
+
+/**
+ * Emit assembly for a ++ postfix expression
+ * @param the node of the postfix expression
+*/
+void emit_plus_plus_postfix_expression(struct SyntaxNode *node) {
+    emit_expression(node->first_child);
+   
+    start_chunk("++ expression");
+    emit("mov2 fp : tmp");
+    emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
+    emit("lda (tmp)");
+    emit("clc");
+    emit("adc #1");
+    emit("sta (tmp)");
+    if (node->type->bytes == 2) {
+        struct Label *no_carry = new_label();
+        emit("bcc %s", no_carry->name);
+        emit("inc2 tmp");
+        emit("lda (tmp)");
+        emit("inc");
+        emit("sta (tmp)");
+        emit_label(no_carry);
+    }
+    end_chunk("++ expression");
+}
+
+/**
+ * Emit assembly for a -- postfix expression
+ * @param the node of the postfix expression
+*/
+void emit_minus_minus_postfix_expression(struct SyntaxNode *node) {
+    emit_expression(node->first_child);
+    start_chunk("-- expression");
+    emit("mov2 fp : tmp");
+    emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
+    emit("lda (tmp)");
+    emit("sec");
+    emit("sbc #1");
+    emit("sta (tmp)");
+    if (node->type->bytes == 2) {
+        struct Label *no_carry = new_label();
+        emit("bcs %s", no_carry->name);
+        emit("inc2 tmp");
+        emit("lda (tmp)");
+        emit("dec");
+        emit("sta (tmp)");
+        emit_label(no_carry);
+    }
+    end_chunk("-- expression");
+}
+
 
 /**
  * Emit assembly for a return statement 
@@ -515,7 +587,6 @@ void emit_return_statement(struct SyntaxNode *node) {
 
         end_chunk("return");
     }
-    
 }
 
 
@@ -551,4 +622,5 @@ void emit_type_conversion(struct Type *from_type, struct Type *to_type) {
 
     end_chunk("type convert");
 }
+
 

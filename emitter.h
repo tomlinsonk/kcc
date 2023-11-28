@@ -38,6 +38,9 @@ void emit_binary_expression(struct SyntaxNode *node);
 void emit_plus_binary_expression(struct SyntaxNode *node);
 void emit_double_equals_binary_expression(struct SyntaxNode *node);
 void emit_bang_equals_binary_expression(struct SyntaxNode *node);
+void emit_postfix_expression(struct SyntaxNode *node);
+void emit_plus_plus_postfix_expression(struct SyntaxNode *node);
+void emit_minus_minus_postfix_expression(struct SyntaxNode *node);
 
 void emit_unary_expression(struct SyntaxNode *node);
 void emit_assignment_expression(struct SyntaxNode *node);

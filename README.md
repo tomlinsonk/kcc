@@ -55,14 +55,22 @@ int main() {
 
 Steps towards Milestone 2. Need to be able to emit:
 1. ~~Comparisons == and !=~~
-2. Unary operators ++ and --
-    - ~~Lexing~~
-    - ~~Parsing~~
-    - ~~Typechecking~~
-    - Emitting
+2. ~~Unary operators ++ and --~~
 3. Bitshifts >> and <<
+    - Lexing
+    - Parsing
+    - Typechecking
+    - Emitting
 4. If () else () conditionals
+    - Lexing
+    - Parsing
+    - Typechecking
+    - Emitting
 5. While loops
+    - Lexing
+    - Parsing
+    - Typechecking
+    - Emitting
 
 ## Design details
 

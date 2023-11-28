@@ -500,9 +500,6 @@ struct SyntaxNode *parse_return_statement() {
 }
 
 
-
-
-
 /**
  * Parse an expression (delegates to the loosest-binding type, assignment expression)
  * @return a pointer to the expression node
@@ -512,7 +509,7 @@ struct SyntaxNode *parse_expression() {
 }
 
 /**
- * Try parsing an assignmnet expression of the form [expression] [assignmnet operator] = [expression]
+ * Try parsing an assignment expression of the form [expression] [assignmnet operator] = [expression]
  * For a valid assignment expression, the LHS has to be a unary expression, but we can catch that in
  * typechecking when we're checking that the LHS is an lvalue. This implementation allows us to fall 
  * through to binary expression if there is no assignment operator

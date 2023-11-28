@@ -84,7 +84,6 @@ struct Type *get_enclosing_function_return_type(struct SyntaxNode *node) {
     return node->type->return_type;
 }
 
-
 /**
  * Check to see if a main method exists with signature int main().
  * @param symbol_table the top-level symbol table
@@ -145,7 +144,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case COMPOUND_STATEMENT_SYNTAX:
         // Create a new scope!
         symbol_table = new_subtable(symbol_table);
-        // Fall through to typechexking list of children
+        // Fall through to typechecking list of children
     case TRANSLATION_UNIT_SYNTAX:
     case DECLARATION_LIST_SYNTAX:
     case STATEMENT_LIST_SYNTAX:
@@ -160,6 +159,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
             typecheck(root->first_child, symbol_table);
         break;
     default:
+        printf(BOLD_RED "Warning: no typechecking support for %s \n" RESET, syntax_names[root->syntax]);
         break;
     }
 }
@@ -186,9 +186,6 @@ void typecheck_binary_expression(struct SyntaxNode *root, struct SymbolTable *sy
     }
 }
 
-
-
-
 /**
  * Verify that an assignment expression has valid types
  * @param root a pointer to the assignment expression node 
@@ -198,6 +195,7 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
     typecheck(root->first_child, symbol_table);
     typecheck(root->last_child, symbol_table);
 
+    // TODO: can assign to any lvalue, not just raw identifiers
     if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
         printf(BOLD_RED "Error: can only assign to identifier, not %s\n" RESET,  syntax_names[root->first_child->syntax]);
         num_semantic_errors++;
@@ -228,17 +226,35 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
 void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     typecheck(root->first_child, symbol_table);
 
-    if (is_numeric(root->first_child->type)) {
-        root->type = root->first_child->type;
-    } else {
-        root->type = &ERROR_TYPE;
-        
-        printf(BOLD_RED "Error: postfix operator %s is not applicable to type ",  token_kind_names[root->token->kind]);
-        print_type(root->first_child->type);
-        printf("\n" RESET);
+    // TODO: other postfix expressions
 
-        num_semantic_errors++;
+    switch (root->token->kind) {
+    case PLUS_PLUS_TOKEN:
+    case MINUS_MINUS_TOKEN:
+        // TODO: check for any lvalue rather than only identifier
+        if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
+            printf(BOLD_RED "Error: postfix operator %s is not applicable to syntax %s \n" RESET, token_kind_names[root->token->kind], syntax_names[root->first_child->syntax]);
+            num_semantic_errors++;
+        }
+
+        if (is_numeric(root->first_child->type)) {
+            root->type = root->first_child->type;
+        } else {
+            root->type = &ERROR_TYPE;
+            
+            printf(BOLD_RED "Error: postfix operator %s is not applicable to type ",  token_kind_names[root->token->kind]);
+            print_type(root->first_child->type);
+            printf("\n" RESET);
+
+            num_semantic_errors++;
+        }
+        break;
+    default:
+        printf(BOLD_RED "Warning: no typechecking support for postfix operator %s \n" RESET, token_kind_names[root->token->kind]);
+        break;
     }
+
+    
 }
 
 /**
