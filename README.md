@@ -74,11 +74,6 @@ Steps towards Milestone 2. Need to be able to emit:
 
 Expressions automatically convert between `char` and `int` (taking the bottom byte or extending with a zero byte). 
 
-### Register layout
-Values are loaded in the following locations:
-#### First value
-- `char`: A register
-- `int`: A register (low byte), X register (high byte) 
 
 ### Function calling
 #### Stack 
@@ -98,7 +93,7 @@ The first five bullets are set by the caller. Note that 1 is subtracted from the
 The frame pointer fp points to the current frame, starting at item 6 (callee locals). This is used to have a consistent offset to access locals. The current frame pointer is set by the callee when it is called.  
 
 #### Register use
-The A, X, Y and registers may all be overwritten by the callee.
+The A, X, and Y registers may all be overwritten by the callee.
 
 #### Returning
 The callee places its return value in the following locations:
