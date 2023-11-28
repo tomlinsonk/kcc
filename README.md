@@ -57,6 +57,10 @@ Steps towards Milestone 2. Need to be able to emit:
 1. ~~Comparisons == and !=~~
 2. ~~Unary operators ++ and --~~
 3. Bitshifts >> and <<
+    - ~~one byte >>~~
+    - two byte >>
+    - one byte <<
+    - two byte <<
 4. If () else () conditionals
 5. While loops
 
