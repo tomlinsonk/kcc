@@ -3,7 +3,8 @@ This is a (WIP) C compiler designed for a specific 65C02 target: the KiT. The pr
 It would be great to be able to write KiT programs in C and then compile them to 65C02 assembly, but I don't anticipate being able to write a complete C compiler.
 I'll just keep expanding it until I'm happy with the state of the compiler.
 
-#### Milestone 1
+#### ~~Milestone 1~~ Completed!
+
 As a small end-to-end goal, I want to be able to compile and run the following C program on the KiT:
 
 ```C
