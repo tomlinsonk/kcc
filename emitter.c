@@ -288,18 +288,29 @@ void emit_expression(struct SyntaxNode *node) {
         emit_identifier(node);
         break;
     case INT_CONSTANT_SYNTAX:
-        start_chunk("int constant");
-        emit("lda #>%i", node->token->int_value);
-        emit("jsr _push");
-        emit("lda #<%i", node->token->int_value);
-        emit("jsr _push");
-        end_chunk("int constant");
+        emit_int_constant(node);
         break;
     default:
         printf(BOLD_RED "Error: can't emit expression kind %s\n" RESET, syntax_names[node->syntax]);
         break;
     }
 
+}
+
+
+/**
+ * Emit assembly for an integer constant. Pushes the value to the stack.
+ * @param node the integer constant node
+*/
+void emit_int_constant(struct SyntaxNode *node) {
+    start_chunk("int constant");
+    if (node->type->bytes == 2) {
+        emit("lda #>%i", node->token->int_value);
+        emit("jsr _push");
+    }
+    emit("lda #<%i", node->token->int_value);
+    emit("jsr _push");
+    end_chunk("int constant");
 }
 
 
@@ -325,10 +336,16 @@ void emit_binary_expression(struct SyntaxNode *node) {
         emit_plus_binary_expression(node);
         break;
     case DOUBLE_EQUALS_TOKEN:
-        emit_double_equals_binary_expression(node);
+        emit_equals_binary_expression(node);
         break;
     case BANG_EQUALS_TOKEN:
-        emit_bang_equals_binary_expression(node);
+        emit_not_equals_binary_expression(node);
+        break;
+    case DOUBLE_GREATER_TOKEN:
+        emit_right_shift_binary_expression(node);
+        break;
+    case DOUBLE_LESS_TOKEN:
+        emit_left_shift_binary_expression(node);
         break;
     default:
         printf(BOLD_RED "Error: can't emit binary operator %s\n" RESET, token_kind_names[node->token->kind]);
@@ -342,7 +359,7 @@ void emit_binary_expression(struct SyntaxNode *node) {
  * @param node the expression node
 */
 void emit_plus_binary_expression(struct SyntaxNode *node) {
-    start_chunk("+ exression");
+    start_chunk("+ expression");
     if (node->type->bytes == 2) {
         emit("jsr _pop");
         emit("sta tmp");
@@ -364,7 +381,55 @@ void emit_plus_binary_expression(struct SyntaxNode *node) {
         emit("adc (sp),y");     
         emit("sta (sp),y");
     }
-    end_chunk("+ exression");
+    end_chunk("+ expression");
+}
+
+/**
+ * Emit assembly for a >> binary expression
+ * @param node the expression node
+*/
+void emit_right_shift_binary_expression(struct SyntaxNode *node) {
+    struct Label *loop = new_label();
+    struct Label *all_zeros = new_label();
+    struct Label *done = new_label();
+
+    start_chunk(">> expression");
+    if (node->type->bytes == 1) {
+        emit("jsr _pop");
+        emit("cmp #0");
+        emit("beq %s", done->name); // if shifting by 0 bits, result is unchanged
+        emit("cmp #8");  // if shifting by 8 or more bits, result is 0
+        emit("bcs %s", all_zeros->name);
+
+        // do shift
+        emit("tax");
+        emit("jsr _pop");
+        emit_label(loop);
+        emit("lsr");
+        emit("dex");
+        emit("bne %s", loop->name);
+        emit("jsr _push");
+        emit("jmp %s", done->name);
+
+        emit_label(all_zeros);
+        emit("jsr _pop");
+        emit("lda #0");
+        emit("jsr _push");
+    } else if (node->type->bytes == 2) {
+        // TODO
+    }
+    emit_label(done);
+    end_chunk(">> expression");
+}
+
+/**
+ * Emit assembly for a << binary expression
+ * @param node the expression node
+*/
+void emit_left_shift_binary_expression(struct SyntaxNode *node) {
+    start_chunk("<< expression");
+    // TODO
+    end_chunk("<< expression");
 }
 
 
@@ -372,7 +437,7 @@ void emit_plus_binary_expression(struct SyntaxNode *node) {
  * Emit assembly for an == comparison expression
  * @param node the syntax node of the expreesion
 */
-void emit_double_equals_binary_expression(struct SyntaxNode *node) {
+void emit_equals_binary_expression(struct SyntaxNode *node) {
     struct Label *not_equal_label = new_label();
     struct Label *done_label = new_label();
 
@@ -424,12 +489,12 @@ void emit_double_equals_binary_expression(struct SyntaxNode *node) {
  * Emit assembly for an != comparison expression
  * @param node the syntax node of the expreesion
 */
-void emit_bang_equals_binary_expression(struct SyntaxNode *node) {
+void emit_not_equals_binary_expression(struct SyntaxNode *node) {
     struct Label *not_equal_label = new_label();
     struct Label *done_label = new_label();
 
     start_chunk("!= expression");
-    emit_double_equals_binary_expression(node);
+    emit_equals_binary_expression(node);
     emit("ldy #1");
     emit("lda #1");
     emit("eor (sp),y");
@@ -501,10 +566,10 @@ void emit_assignment_expression(struct SyntaxNode *node) {
 void emit_postfix_expression(struct SyntaxNode *node) {
     switch (node->token->kind) {
     case PLUS_PLUS_TOKEN:
-        emit_plus_plus_postfix_expression(node);
+        emit_increment_postfix_expression(node);
         break;
     case MINUS_MINUS_TOKEN:
-        emit_minus_minus_postfix_expression(node);
+        emit_decrement_postfix_expression(node);
         break;
     default:
         printf(BOLD_RED "Error: can't emit postfix operator %s" RESET, token_kind_names[node->token->kind]);
@@ -516,7 +581,7 @@ void emit_postfix_expression(struct SyntaxNode *node) {
  * Emit assembly for a ++ postfix expression
  * @param the node of the postfix expression
 */
-void emit_plus_plus_postfix_expression(struct SyntaxNode *node) {
+void emit_increment_postfix_expression(struct SyntaxNode *node) {
     emit_expression(node->first_child);
    
     start_chunk("++ expression");
@@ -542,7 +607,7 @@ void emit_plus_plus_postfix_expression(struct SyntaxNode *node) {
  * Emit assembly for a -- postfix expression
  * @param the node of the postfix expression
 */
-void emit_minus_minus_postfix_expression(struct SyntaxNode *node) {
+void emit_decrement_postfix_expression(struct SyntaxNode *node) {
     emit_expression(node->first_child);
     start_chunk("-- expression");
     emit("mov2 fp : tmp");

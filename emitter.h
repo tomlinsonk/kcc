@@ -34,17 +34,22 @@ void emit_return_statement(struct SyntaxNode *node);
 void emit_expression_statement(struct SyntaxNode *node);
 
 void emit_expression(struct SyntaxNode *node);
+
 void emit_binary_expression(struct SyntaxNode *node);
 void emit_plus_binary_expression(struct SyntaxNode *node);
-void emit_double_equals_binary_expression(struct SyntaxNode *node);
-void emit_bang_equals_binary_expression(struct SyntaxNode *node);
+void emit_equals_binary_expression(struct SyntaxNode *node);
+void emit_not_equals_binary_expression(struct SyntaxNode *node);
+void emit_right_shift_binary_expression(struct SyntaxNode *node);
+void emit_left_shift_binary_expression(struct SyntaxNode *node);
+
 void emit_postfix_expression(struct SyntaxNode *node);
-void emit_plus_plus_postfix_expression(struct SyntaxNode *node);
-void emit_minus_minus_postfix_expression(struct SyntaxNode *node);
+void emit_increment_postfix_expression(struct SyntaxNode *node);
+void emit_decrement_postfix_expression(struct SyntaxNode *node);
 
 void emit_unary_expression(struct SyntaxNode *node);
 void emit_assignment_expression(struct SyntaxNode *node);
 void emit_identifier(struct SyntaxNode *node);
+void emit_int_constant(struct SyntaxNode *node);
 
 void emit(char *str, ...);
 void emit_label(struct Label *label);
