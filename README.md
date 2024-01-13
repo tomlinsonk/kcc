@@ -66,8 +66,7 @@ Steps towards Milestone 2. Need to be able to emit:
     - ~~Parsing~~
     - Emitting
 5. While loops
-6. == and !=
-7. %
+6. Modulus operator %
 
 
 ## Design details
