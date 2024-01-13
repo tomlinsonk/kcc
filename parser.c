@@ -465,6 +465,8 @@ struct SyntaxNode *parse_statement() {
         return parse_compound_statement();
     case RETURN_KEYWORD_TOKEN:
         return parse_return_statement();
+    case IF_KEYWORD_TOKEN:
+        return parse_conditional_statement();
     default:
         return parse_expression_statement();
     }
@@ -495,6 +497,30 @@ struct SyntaxNode *parse_return_statement() {
     match(RETURN_KEYWORD_TOKEN);
     add_syntax_child(node, parse_expression());
     match(SEMICOLON_TOKEN);
+
+    return node;
+}
+
+/**
+ * Parse an if statement (possibly with an else block)
+ * @return a pointer to the if statement node
+*/
+struct SyntaxNode *parse_conditional_statement() {
+    struct SyntaxNode *node = new_syntax_node(IF_STATEMENT_SYNTAX, NULL);
+
+    match(IF_KEYWORD_TOKEN);
+
+    match(OPEN_PAREN_TOKEN);
+    add_syntax_child(node, parse_expression());
+    match(CLOSE_PAREN_TOKEN);
+
+    add_syntax_child(node, parse_statement());
+
+    if (cur_token->kind == ELSE_KEYWORD_TOKEN) {
+        match(ELSE_KEYWORD_TOKEN);
+        node->syntax = IF_ELSE_STATEMENT_SYNTAX;
+        add_syntax_child(node, parse_statement());
+    }
 
     return node;
 }

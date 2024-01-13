@@ -245,7 +245,7 @@ void emit_statement(struct SyntaxNode *node) {
         emit_return_statement(node);
         break;
     default:
-        printf(BOLD_RED "Error: can't emit statement kind %s" RESET, syntax_names[node->syntax]);
+        printf(BOLD_RED "Error: can't emit statement kind %s\n" RESET, syntax_names[node->syntax]);
         break;
     }
 }   
@@ -457,7 +457,6 @@ void emit_shift(struct SyntaxNode *node, int left) {
  * @param node the expression node
 */
 void emit_right_shift_binary_expression(struct SyntaxNode *node) {
-
     start_chunk(">> expression");
     emit_shift(node, 0);
     end_chunk(">> expression");

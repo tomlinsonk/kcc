@@ -57,13 +57,17 @@ int main() {
 Steps towards Milestone 2. Need to be able to emit:
 1. ~~Comparisons == and !=~~
 2. ~~Unary operators ++ and --~~
-3. Bitshifts >> and <<
+3. ~~Bitshifts >> and <<~~
     - ~~one byte >>~~
-    - two byte >>
-    - one byte <<
-    - two byte <<
-4. If () else () conditionals
+    - ~~two byte >>~~
+    - ~~one byte <<~~
+    - ~~two byte <<~~
+4. If () else  conditionals
+    - ~~Parsing~~
+    - Emitting
 5. While loops
+6. == and !=
+7. %
 
 
 ## Design details
