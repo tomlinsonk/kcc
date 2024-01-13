@@ -416,7 +416,37 @@ void emit_right_shift_binary_expression(struct SyntaxNode *node) {
         emit("lda #0");
         emit("jsr _push");
     } else if (node->type->bytes == 2) {
-        // TODO
+        emit("jsr _pop");
+        emit("tax");
+        emit("jsr _pop");
+        emit("cmp #0");
+        emit("bne %s", all_zeros->name); // if hi byte of shift count is nonzero, result is 0
+        emit("cpx #16");  // if shifting by 16 or more bits, result is 0
+        emit("bcs %s", all_zeros->name);
+
+        // do shift
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+
+        emit_label(loop);
+        emit("lsr tmp+1");
+        emit("ror tmp");
+        emit("dex");
+        emit("bne %s", loop->name);
+        emit("lda tmp+1");
+        emit("jsr _push");
+        emit("lda tmp");
+        emit("jsr _push");
+        emit("jmp %s", done->name);
+
+        emit_label(all_zeros);
+        emit("add2 sp : #2");
+        emit("lda #0");
+        emit("jsr _push");
+        emit("lda #0");
+        emit("jsr _push");
     }
     emit_label(done);
     end_chunk(">> expression");
