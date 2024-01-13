@@ -384,16 +384,17 @@ void emit_plus_binary_expression(struct SyntaxNode *node) {
     end_chunk("+ expression");
 }
 
+
 /**
- * Emit assembly for a >> binary expression
- * @param node the expression node
+ * Emit assembly for a bit shift (<< or >>).
+ * @param node the SyntaxNode of the shift binary expression
+ * @param left if 1, do <<; otherwise, do >>
 */
-void emit_right_shift_binary_expression(struct SyntaxNode *node) {
+void emit_shift(struct SyntaxNode *node, int left) {
     struct Label *loop = new_label();
     struct Label *all_zeros = new_label();
     struct Label *done = new_label();
 
-    start_chunk(">> expression");
     if (node->type->bytes == 1) {
         emit("jsr _pop");
         emit("cmp #0");
@@ -405,7 +406,7 @@ void emit_right_shift_binary_expression(struct SyntaxNode *node) {
         emit("tax");
         emit("jsr _pop");
         emit_label(loop);
-        emit("lsr");
+        emit(left ? "asl" : "lsr");
         emit("dex");
         emit("bne %s", loop->name);
         emit("jsr _push");
@@ -431,8 +432,8 @@ void emit_right_shift_binary_expression(struct SyntaxNode *node) {
         emit("sta tmp+1");
 
         emit_label(loop);
-        emit("lsr tmp+1");
-        emit("ror tmp");
+        emit(left ? "asl tmp" : "lsr tmp+1");
+        emit(left ? "rol tmp+1" : "ror tmp");
         emit("dex");
         emit("bne %s", loop->name);
         emit("lda tmp+1");
@@ -449,6 +450,16 @@ void emit_right_shift_binary_expression(struct SyntaxNode *node) {
         emit("jsr _push");
     }
     emit_label(done);
+}
+
+/**
+ * Emit assembly for a >> binary expression
+ * @param node the expression node
+*/
+void emit_right_shift_binary_expression(struct SyntaxNode *node) {
+
+    start_chunk(">> expression");
+    emit_shift(node, 0);
     end_chunk(">> expression");
 }
 
@@ -458,7 +469,7 @@ void emit_right_shift_binary_expression(struct SyntaxNode *node) {
 */
 void emit_left_shift_binary_expression(struct SyntaxNode *node) {
     start_chunk("<< expression");
-    // TODO
+    emit_shift(node, 1);
     end_chunk("<< expression");
 }
 

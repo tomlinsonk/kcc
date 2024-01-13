@@ -39,6 +39,7 @@ void emit_binary_expression(struct SyntaxNode *node);
 void emit_plus_binary_expression(struct SyntaxNode *node);
 void emit_equals_binary_expression(struct SyntaxNode *node);
 void emit_not_equals_binary_expression(struct SyntaxNode *node);
+void emit_shift(struct SyntaxNode *node, int left);
 void emit_right_shift_binary_expression(struct SyntaxNode *node);
 void emit_left_shift_binary_expression(struct SyntaxNode *node);
 
