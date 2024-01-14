@@ -17,7 +17,7 @@
 static const char *syntax_names[] = {
     "INT_CONSTANT", "STRING", "IDENTIFIER", 
     "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ASSIGNMENT_EXPRESSION", "POSTFIX_EXPRESSION",
-    "IF_STATEMENT", "IF_ELSE_STATEMENT", "RETURN_STATEMENT", "EXPRESSION_STATEMENT", "COMPOUND_STATEMENT", "STATEMENT_LIST", 
+    "IF_STATEMENT", "IF_ELSE_STATEMENT", "WHILE_STATEMENT", "RETURN_STATEMENT", "EXPRESSION_STATEMENT", "COMPOUND_STATEMENT", "STATEMENT_LIST", 
     "DECLARATOR", "DECLARATION_SPECIFIER", "DECLARATION", "DECLARATION_LIST",
     "FUNCTION_DEFINITION", "PARAMETER_LIST",
     "TRANSLATION_UNIT",
@@ -40,6 +40,7 @@ enum SyntaxKind {
 
     IF_STATEMENT_SYNTAX,
     IF_ELSE_STATEMENT_SYNTAX,
+    WHILE_STATEMENT_SYNTAX,
     RETURN_STATEMENT_SYNTAX,
     EXPRESSION_STATEMENT_SYNTAX,
     COMPOUND_STATEMENT_SYNTAX,
@@ -101,6 +102,7 @@ struct SyntaxNode *parse_compound_statement();
 struct SyntaxNode *parse_expression_statement();
 struct SyntaxNode *parse_return_statement();
 struct SyntaxNode *parse_conditional_statement();
+struct SyntaxNode *parse_while_statement();
 
 struct SyntaxNode *parse_expression();
 struct SyntaxNode *parse_assignment_expression();

@@ -103,7 +103,6 @@ int main_exists(struct SymbolTable *symbol_table) {
  */
 void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     struct SyntaxNode *cur_node;
-    struct SymbolTable *new_table;
 
     switch (root->syntax){
     case ASSIGNMENT_EXPRESSION_SYNTAX:
@@ -144,11 +143,14 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case COMPOUND_STATEMENT_SYNTAX:
         // Create a new scope!
         symbol_table = new_subtable(symbol_table);
-        // Fall through to typechecking list of children
+        // Fall through
+
+    // Typecheck list of children
     case TRANSLATION_UNIT_SYNTAX:
     case DECLARATION_LIST_SYNTAX:
     case IF_STATEMENT_SYNTAX: 
     case IF_ELSE_STATEMENT_SYNTAX:
+    case WHILE_STATEMENT_SYNTAX:
     case STATEMENT_LIST_SYNTAX:
         cur_node = root->first_child;
         while (cur_node != NULL) {

@@ -250,6 +250,9 @@ void emit_statement(struct SyntaxNode *node) {
     case IF_ELSE_STATEMENT_SYNTAX:
         emit_conditional_statement(node, 1);
         break;
+    case WHILE_STATEMENT_SYNTAX:
+        emit_while_statement(node);
+        break;
     case COMPOUND_STATEMENT_SYNTAX:
         emit_compound_statement(node);
         break;
@@ -743,6 +746,41 @@ void emit_conditional_statement(struct SyntaxNode *node, int has_else) {
         end_chunk("else body");
         emit_label(end_else);
     }
+}
+
+/**
+ * Emit assembly for a while loop
+ * @param node the node of the while statement
+*/
+void emit_while_statement(struct SyntaxNode *node) {
+    struct Label *while_condition = new_label();
+    struct Label *while_body = new_label();
+    struct Label *end_while = new_label();
+
+    start_chunk("while condition");
+    emit_label(while_condition);
+    emit_expression(node->first_child);
+    if (node->first_child->type->bytes == 2) {
+        emit("jsr _pop");
+        emit("tax");
+        emit("jsr _pop");
+        emit("bne %s", while_body->name);
+        emit("txa");
+        emit("bne %s", while_body->name);
+        emit("jmp %s", end_while->name);
+    } else if (node->first_child->type->bytes == 1) {
+        emit("jsr _pop");
+        emit("bne %s", while_body->name);
+        emit("jmp %s", end_while->name);
+    }
+    end_chunk("while condition");
+
+    start_chunk("while body");
+    emit_label(while_body);
+    emit_statement(node->last_child);
+    emit("jmp %s", while_condition->name);
+    end_chunk("while body");
+    emit_label(end_while);
 }
 
 /**

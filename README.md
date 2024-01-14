@@ -62,10 +62,12 @@ Steps towards Milestone 2. Need to be able to emit:
     - ~~two byte >>~~
     - ~~one byte <<~~
     - ~~two byte <<~~
-4. If () else  conditionals
+4. ~~If () else  conditionals~~
     - ~~Parsing~~
-    - Emitting
+    - ~~Emitting~~
 5. While loops
+    - Parsing
+    - Emitting
 6. Modulus operator %
 
 

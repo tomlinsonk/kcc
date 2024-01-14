@@ -467,6 +467,8 @@ struct SyntaxNode *parse_statement() {
         return parse_return_statement();
     case IF_KEYWORD_TOKEN:
         return parse_conditional_statement();
+    case WHILE_KEYWORD_TOKEN:
+        return parse_while_statement();
     default:
         return parse_expression_statement();
     }
@@ -503,10 +505,11 @@ struct SyntaxNode *parse_return_statement() {
 
 /**
  * Parse an if statement (possibly with an else block)
+ * First child: condition, second child: if body, (third child: else body)
  * @return a pointer to the if statement node
 */
 struct SyntaxNode *parse_conditional_statement() {
-    struct SyntaxNode *node = new_syntax_node(IF_STATEMENT_SYNTAX, NULL);
+    struct SyntaxNode *node = new_syntax_node(IF_STATEMENT_SYNTAX, cur_token);
 
     match(IF_KEYWORD_TOKEN);
 
@@ -521,6 +524,24 @@ struct SyntaxNode *parse_conditional_statement() {
         node->syntax = IF_ELSE_STATEMENT_SYNTAX;
         add_syntax_child(node, parse_statement());
     }
+
+    return node;
+}
+
+/**
+ * Parse a while statement. First child: condition, second child: loop body
+ * @return a pointer to the while statement SyntaxNode
+*/
+struct SyntaxNode *parse_while_statement() {
+    struct SyntaxNode *node = new_syntax_node(WHILE_STATEMENT_SYNTAX, cur_token);
+
+    match(WHILE_KEYWORD_TOKEN);
+
+    match(OPEN_PAREN_TOKEN);
+    add_syntax_child(node, parse_expression());
+    match(CLOSE_PAREN_TOKEN);
+
+    add_syntax_child(node, parse_statement());
 
     return node;
 }
