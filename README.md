@@ -3,7 +3,7 @@ This is a (WIP) C compiler designed for a specific 65C02 target: the KiT. The pr
 It would be great to be able to write KiT programs in C and then compile them to 65C02 assembly, but I don't anticipate being able to write a complete C compiler.
 I'll just keep expanding it until I'm happy with the state of the compiler.
 
-#### ~~Milestone 1~~ Completed!
+#### ~~Milestone 1: basic program~~ Completed!
 
 As a small end-to-end goal, I want to be able to compile and run the following C program on the KiT:
 
@@ -31,7 +31,7 @@ This will require a few basic features:
     - ~~Return~~
 
 
-#### ~~Milestone 2~~ Completed!
+#### ~~Milestone 2: Collatz~~ Completed!
 Once I can compile and run the barebones program above, I want to focus on adding control flow. The next program I'll work towards compiling counts the length of the Collatz sequence starting at 27 ($1b), which should return 111 ($6f):
 ```C
 int main() {
@@ -68,6 +68,38 @@ Steps towards Milestone 2. Need to be able to emit:
 5. ~~While loops~~
     - ~~Parsing~~
     - ~~Emitting~~
+
+#### Milestone 3: Arithmetic (Collatz, but elegant)
+The next step for the compiler is to flesh out its arithmetic abilities. In
+particular, I want to add -, *, /, and %. This will allow me to compile the 
+Collatz program, but without all the hack-y modifications:
+
+```C
+int main() {
+    int n;
+    int i;
+
+    n = 27;
+    i = 0;
+
+    while (n != 1) {
+        i++;
+        if (n % 2 == 0) {       
+            n = n / 2;  
+        } else {
+            n = 3 * n + 1;
+        }
+    }
+
+    return i;
+}
+```
+Steps towards Milestone 3:
+1. Subtraction
+2. Multiplication
+3. Integer division
+4. Modulus
+
 
 
 ## Design details
