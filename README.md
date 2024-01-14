@@ -31,7 +31,7 @@ This will require a few basic features:
     - ~~Return~~
 
 
-#### Milestone 2
+#### ~~Milestone 2~~ Completed!
 Once I can compile and run the barebones program above, I want to focus on adding control flow. The next program I'll work towards compiling counts the length of the Collatz sequence starting at 27 ($1b), which should return 111 ($6f):
 ```C
 int main() {
@@ -43,7 +43,7 @@ int main() {
 
     while (n != 1) {
         i++;
-        if (n % 2 == 0) {
+        if (n << 15 == 0) {       // avoiding modulus
             n = n >> 1;           // avoiding division
         } else {
             n = n + n + n + 1;    // avoiding multiplication
@@ -65,10 +65,9 @@ Steps towards Milestone 2. Need to be able to emit:
 4. ~~If () else  conditionals~~
     - ~~Parsing~~
     - ~~Emitting~~
-5. While loops
-    - Parsing
-    - Emitting
-6. Modulus operator %
+5. ~~While loops~~
+    - ~~Parsing~~
+    - ~~Emitting~~
 
 
 ## Design details
