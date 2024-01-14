@@ -4,8 +4,8 @@
  * @date 28 May 2023
  * @brief Checks a syntax tree for sematic correctness (e.g., typechecking)  
  * 
- * This file provides functions to typecheck a syntax tree. Eventually, will 
- * also check symbol definitions and scopes. 
+ * This file provides functions to typecheck a syntax tree. 
+ * Also checks symbol definitions and scopes. 
  */
 
 #define BOLD_RED    "\033[1m\033[31m"
@@ -147,6 +147,8 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         // Fall through to typechecking list of children
     case TRANSLATION_UNIT_SYNTAX:
     case DECLARATION_LIST_SYNTAX:
+    case IF_STATEMENT_SYNTAX: 
+    case IF_ELSE_STATEMENT_SYNTAX:
     case STATEMENT_LIST_SYNTAX:
         cur_node = root->first_child;
         while (cur_node != NULL) {
@@ -384,6 +386,4 @@ void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbo
         print_type(type->return_type);
         printf(" named %s\n" RESET, name);
     }
-
-    
 }

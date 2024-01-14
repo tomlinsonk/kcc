@@ -32,6 +32,8 @@ void emit_compound_statement(struct SyntaxNode *node);
 void emit_statement(struct SyntaxNode *node);
 void emit_return_statement(struct SyntaxNode *node);
 void emit_expression_statement(struct SyntaxNode *node);
+void emit_conditional_statement(struct SyntaxNode *node, int has_else);
+
 
 void emit_expression(struct SyntaxNode *node);
 

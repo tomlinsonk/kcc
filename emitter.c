@@ -244,6 +244,15 @@ void emit_statement(struct SyntaxNode *node) {
     case RETURN_STATEMENT_SYNTAX:
         emit_return_statement(node);
         break;
+    case IF_STATEMENT_SYNTAX:
+        emit_conditional_statement(node, 0);
+        break;
+    case IF_ELSE_STATEMENT_SYNTAX:
+        emit_conditional_statement(node, 1);
+        break;
+    case COMPOUND_STATEMENT_SYNTAX:
+        emit_compound_statement(node);
+        break;
     default:
         printf(BOLD_RED "Error: can't emit statement kind %s\n" RESET, syntax_names[node->syntax]);
         break;
@@ -694,6 +703,47 @@ void emit_return_statement(struct SyntaxNode *node) {
     }
 }
 
+/**
+ * Emit assembly for an if or if-else statement
+ * @param node the SyntaxNode of the conditional statement
+*/
+void emit_conditional_statement(struct SyntaxNode *node, int has_else) {
+    struct Label *start_if = new_label();
+    struct Label *end_if = new_label();
+    struct Label *end_else = new_label();
+
+    start_chunk("if condition");
+    emit_expression(node->first_child);
+    end_chunk("if condition");
+
+    if (node->first_child->type->bytes == 2) {
+        emit("jsr _pop");
+        emit("tax");
+        emit("jsr _pop");
+        emit("bne %s", start_if->name);
+        emit("txa");
+        emit("bne %s", start_if->name);
+        emit("jmp %s", end_if->name);
+    } else if (node->first_child->type->bytes == 1) {
+        emit("jsr _pop");
+        emit("bne %s", start_if->name);
+        emit("jmp %s", end_if->name);
+    }
+
+    start_chunk("if body");
+    emit_label(start_if);
+    emit_statement(node->first_child->next);
+    if (has_else) emit("jmp %s", end_else->name);
+    end_chunk("if body");
+
+    emit_label(end_if);
+    if (has_else) {
+        start_chunk("else body");
+        emit_statement(node->last_child);
+        end_chunk("else body");
+        emit_label(end_else);
+    }
+}
 
 /**
  * Emit assembly for converting the value on top of the stack from one type to another.
