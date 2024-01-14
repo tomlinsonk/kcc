@@ -147,3 +147,33 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 
 ## Known bugs
 - ~~Emitter not working for addition that overflows into top byte. Seems to be returning the correct low byte but taking the top byte of the first operand instead of the sum~~ Fixed!   
+
+
+## Supported features
+- `int` and `char` types
+- Assignment expressions (just `=`)
+- Binary operators: `+`, `==`, `!=`, `>>`, `<<`
+- Postfix operators: `++`, `--`
+- Return statement
+- While loops
+- If and else-if
+
+
+## Todo
+- Functions: parameters, function calling
+- Binary operators: `-`, `*`, `/`, `%`, `>`, `<`, `<=`, `^`, `|`, `&`, `&&`, `||` 
+- Unary operators: `*`, `+`, `-`, `~`, `!`, `++`, `--`
+- Assigment operators `*=`, `+=`, `-=`, `/=`, `%=`, `<<=`, `>>=`, `&=`, `|=`, `^=`
+- For loops
+- Do-while loops
+- Switch statements
+- Labeled statements
+- Initializers
+- Pointers
+- Arrays
+- Structs
+- Enums
+- Unions
+- Floats
+- Strings
+
