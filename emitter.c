@@ -347,6 +347,9 @@ void emit_binary_expression(struct SyntaxNode *node) {
     case PLUS_TOKEN:
         emit_plus_binary_expression(node);
         break;
+    case MINUS_TOKEN:
+        emit_minus_binary_expression(node);
+        break;
     case DOUBLE_EQUALS_TOKEN:
         emit_equals_binary_expression(node);
         break;
@@ -394,6 +397,38 @@ void emit_plus_binary_expression(struct SyntaxNode *node) {
         emit("sta (sp),y");
     }
     end_chunk("+ expression");
+}
+
+/**
+ * Emit assembly for a subtraction expression
+ * @param node the expression node
+*/
+void emit_minus_binary_expression(struct SyntaxNode *node) {
+    start_chunk("- expression");
+    if (node->type->bytes == 2) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("ldy #1");
+        emit("lda (sp),y");
+        emit("sec");
+        emit("sbc tmp");
+        emit("sta (sp),y");
+        emit("iny");
+        emit("lda (sp),y");
+        emit("sbc tmp+1");
+        emit("sta (sp),y");
+    } else if (node->type->bytes == 1) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("ldy #1");
+        emit("lda (sp),y");
+        emit("sec");
+        emit("sbc tmp");     
+        emit("sta (sp),y");
+    }
+    end_chunk("- expression");
 }
 
 

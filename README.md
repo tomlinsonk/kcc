@@ -145,8 +145,8 @@ Every program must have function `int main()`. To enter the program, the executa
 ### Expressions
 For simplicity, all expressions are evaluated using the stack. Operands are pushed onto the stack (lhs then rhs) and then popped when an operator is evaluated. The result is then pushed back onto the stack, allowing easy evaluation of nested expressions.
 
-## Known bugs
-- ~~Emitter not working for addition that overflows into top byte. Seems to be returning the correct low byte but taking the top byte of the first operand instead of the sum~~ Fixed!   
+<!-- ## Known bugs
+- ~~Emitter not working for addition that overflows into top byte. Seems to be returning the correct low byte but taking the top byte of the first operand instead of the sum~~ Fixed!    -->
 
 
 ## Supported features
