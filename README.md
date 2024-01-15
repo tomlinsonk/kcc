@@ -95,8 +95,8 @@ int main() {
 }
 ```
 Steps towards Milestone 3:
-1. Subtraction
-2. Multiplication
+1. ~~Subtraction~~
+2. ~~Multiplication~~
 3. Integer division
 4. Modulus
 

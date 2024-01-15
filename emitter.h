@@ -41,6 +41,7 @@ void emit_expression(struct SyntaxNode *node);
 void emit_binary_expression(struct SyntaxNode *node);
 void emit_plus_binary_expression(struct SyntaxNode *node);
 void emit_minus_binary_expression(struct SyntaxNode *node);
+void emit_times_binary_expression(struct SyntaxNode *node);
 void emit_equals_binary_expression(struct SyntaxNode *node);
 void emit_not_equals_binary_expression(struct SyntaxNode *node);
 void emit_shift(struct SyntaxNode *node, int left);
