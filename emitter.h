@@ -53,6 +53,7 @@ void emit_increment_postfix_expression(struct SyntaxNode *node);
 void emit_decrement_postfix_expression(struct SyntaxNode *node);
 
 void emit_unary_expression(struct SyntaxNode *node);
+void emit_unary_minus_expression(struct SyntaxNode *node);
 void emit_assignment_expression(struct SyntaxNode *node);
 void emit_identifier(struct SyntaxNode *node);
 void emit_int_constant(struct SyntaxNode *node);

@@ -282,7 +282,7 @@ void emit_expression_statement(struct SyntaxNode *node) {
 void emit_expression(struct SyntaxNode *node) {
     switch (node->syntax) {
     case UNARY_EXPRESSION_SYNTAX:
-        // TODO
+        emit_unary_expression(node);
         break;
     case POSTFIX_EXPRESSION_SYNTAX:
         emit_postfix_expression(node);
@@ -369,6 +369,55 @@ void emit_binary_expression(struct SyntaxNode *node) {
         printf(BOLD_RED "Error: can't emit binary operator %s\n" RESET, token_kind_names[node->token->kind]);
         break;
     }
+}
+
+/**
+ * Emit assembly for a unary expression
+ * @param node the expression node
+*/
+void emit_unary_expression(struct SyntaxNode *node) {
+    emit_expression(node->first_child);
+
+    switch (node->token->kind) {
+    case PLUS_TOKEN:
+        // Unary plus does nothing for us (real C promotes to int)
+        break;
+    case MINUS_TOKEN:
+        emit_unary_minus_expression(node);
+        break;
+    default:
+        printf(BOLD_RED "Error: can't emit unary operator %s\n" RESET, token_kind_names[node->token->kind]);
+        break;
+    }
+}
+
+/**
+ * Emit assembly for a unary minus expression
+ * @param node expression node
+*/
+void emit_unary_minus_expression(struct SyntaxNode *node) {
+    start_chunk("unary -");
+    if (node->type->bytes == 2) {
+        emit("ldy #1");
+        emit("lda (sp),y");
+        emit("eor #$ff");
+        emit("clc");
+        emit("adc #1");
+        emit("sta (sp),y");
+
+        emit("iny");
+        emit("lda (sp),y");
+        emit("eor #$ff");
+        emit("adc #0");
+        emit("sta (sp),y");
+    } else if (node->type->bytes == 1) {
+        emit("ldy #1");
+        emit("lda (sp),y");
+        emit("eor #$ff");
+        emit("inc");
+        emit("sta (sp),y");
+    }
+    end_chunk("unary -");
 }
 
 
