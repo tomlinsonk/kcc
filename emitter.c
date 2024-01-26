@@ -356,6 +356,9 @@ void emit_binary_expression(struct SyntaxNode *node) {
     case SLASH_TOKEN:
         emit_divide_binary_expression(node);
         break;
+    case PERCENT_TOKEN:
+        emit_mod_binary_expression(node);
+        break;
     case DOUBLE_EQUALS_TOKEN:
         emit_equals_binary_expression(node);
         break;
@@ -557,6 +560,42 @@ void emit_divide_binary_expression(struct SyntaxNode *node) {
 
 }
 
+/**
+ * Emit assembly for a mod expression
+ * @param node the expression node
+*/
+void emit_mod_binary_expression(struct SyntaxNode *node) {
+    start_chunk("\% expression");
+    if (types_match(node->type, &INT_TYPE)) {
+        emit("jsr _pop");
+        emit("sta tmp+2");
+        emit("jsr _pop");
+        emit("sta tmp+3");
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("jsr _udiv16");
+        emit("lda tmp+5");
+        emit("jsr _push");
+        emit("lda tmp+4");
+        emit("jsr _push");
+    } else if (types_match(node->type, &CHAR_TYPE)) {
+        // Unsigned division for char
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _udiv8");
+        emit("jsr _push");
+    } else {
+        printf(BOLD_RED "Error: can't emit mod for type ");
+        print_type(node->type);
+        printf(" \n" RESET);
+    }
+
+    end_chunk("\% expression");
+}
 
 
 /**

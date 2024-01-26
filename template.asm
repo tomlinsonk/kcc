@@ -81,8 +81,8 @@ Create an emulator breakpoint (for debugging)
 .label ret = $04
 // $05
 
-.label tmp = $10
-// $10-$1f
+.label tmp = $a0
+// $a0-$af
 
 .const stack_top = $5fff
 

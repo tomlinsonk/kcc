@@ -69,7 +69,7 @@ Steps towards Milestone 2. Need to be able to emit:
     - ~~Parsing~~
     - ~~Emitting~~
 
-#### Milestone 3: Arithmetic (Collatz, but elegant)
+#### ~~Milestone 3: Arithmetic (Collatz, but elegant)~~ Completed!
 The next step for the compiler is to flesh out its arithmetic abilities. In
 particular, I want to add -, *, /, and %. This will allow me to compile the 
 Collatz program, but without all the hack-y modifications:
@@ -102,7 +102,7 @@ Steps towards Milestone 3:
     - ~~8 bit signed~~
     - ~~16 bit unsigned~~
     - ~~16 bit signed~~
-4. Modulus
+4. ~~Modulus~~
 
 
 
