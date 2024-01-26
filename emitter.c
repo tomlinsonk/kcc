@@ -353,6 +353,9 @@ void emit_binary_expression(struct SyntaxNode *node) {
     case STAR_TOKEN:
         emit_times_binary_expression(node);
         break;
+    case SLASH_TOKEN:
+        emit_divide_binary_expression(node);
+        break;
     case DOUBLE_EQUALS_TOKEN:
         emit_equals_binary_expression(node);
         break;
@@ -514,6 +517,46 @@ void emit_times_binary_expression(struct SyntaxNode *node) {
     }
     end_chunk("* expression");
 }
+
+/**
+ * Emit assembly for a division expression
+ * @param node the expression node
+*/
+void emit_divide_binary_expression(struct SyntaxNode *node) {
+    start_chunk("/ expression");
+    if (types_match(node->type, &INT_TYPE)) {
+        emit("jsr _pop");
+        emit("sta tmp+2");
+        emit("jsr _pop");
+        emit("sta tmp+3");
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("jsr _div16");
+        emit("lda tmp+1");
+        emit("jsr _push");
+        emit("lda tmp");
+        emit("jsr _push");
+    } else if (types_match(node->type, &CHAR_TYPE)) {
+        // Unsigned division for char
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _udiv8");
+        emit("lda tmp");
+        emit("jsr _push");
+    } else {
+        printf(BOLD_RED "Error: can't emit division for type ");
+        print_type(node->type);
+        printf(" \n" RESET);
+    }
+
+    end_chunk("/ expression");
+
+}
+
 
 
 /**

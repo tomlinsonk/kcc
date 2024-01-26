@@ -234,5 +234,183 @@ inner_loop:
     rts
 }
 
+
+/**
+8-bit unsiged division from:
+http://6502org.wikidot.com/software-math-intdiv
+Divides number in tmp by number in tmp+1.
+Result in tmp, remainder in A
+ */
+_udiv8: {
+    lda #0
+    ldx #8
+    asl tmp
+L1: 
+    rol
+    cmp tmp+1
+    bcc L2
+    sbc tmp+1
+L2:
+    rol tmp
+    dex
+    bne L1
+
+    rts
+}
+
+/**
+8-bit signed division.
+Divides number in tmp by number in tmp+1.
+Result in tmp, remainder in A
+*/
+_div8: {
+    .label sgn = tmp+6
+
+    stz sgn           // if result is pos, sgn is 0
+
+    bit tmp
+    bpl tmp_pos
+    
+    // negate tmp
+    lda #0
+    sec
+    sbc tmp
+    sta tmp
+
+    bit tmp+1
+    bmi negate_divisor
+    dec sgn           // tmp neg, tmp+1 pos
+    jmp divide
+
+tmp_pos:
+    bit tmp+1
+    bpl divide
+    dec sgn           // tmp pos, tmp+1 neg
+
+negate_divisor: 
+    lda #0
+    sec
+    sbc tmp+1
+    sta tmp+1
+
+divide:
+    jsr _udiv8
+
+    bit sgn
+    bpl done            // if result should be positive, done!
+
+    // Negate tmp
+    pha
+    lda #0
+    sec
+    sbc tmp
+    sta tmp
+    pla
+
+done:
+    rts
+}
+
+
+/**
+16-bit unsigned division from:
+https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
+Divides number in tmp,tmp+1 by number in tmp+2,tmp+3.
+Stores result in tmp,tmp+1 and remainder in tmp+4,tmp+5
+*/
+_udiv16: {
+    .label dividend = tmp
+    .label divisor = tmp+2
+    .label remainder = tmp+4
+    .label result = dividend
+
+    lda #0	                // preset remainder to 0
+	sta remainder
+	sta remainder+1
+	ldx #16	                // repeat for each bit: ...
+
+divloop:
+    asl dividend	        // dividend lb & hb*2, msb -> Carry
+	rol dividend+1	
+	rol remainder	        // remainder lb & hb * 2 + msb from carry
+	rol remainder+1
+	lda remainder
+	sec
+	sbc divisor	            // substract divisor to see if it fits in
+	tay	                    // lb result -> Y, for we may need it later
+	lda remainder+1
+	sbc divisor+1
+	bcc skip	            // if carry=0 then divisor didn't fit in yet
+
+	sta remainder+1	        // else save substraction result as new remainder,
+	sty remainder	
+	inc result	            // and INCrement result cause divisor fit in 1 times
+
+skip:	
+    dex
+	bne divloop	
+	rts
+}
+
+
+/**
+16-bit signed division.
+Divides number in tmp,tmp+1 by number in tmp+2,tmp+3.
+Stores result in tmp,tmp+1 and remainder in tmp+4,tmp+5
+*/
+_div16: {
+    .label sgn = tmp+6
+
+    stz sgn            // if result is pos, sgn is 0
+    bit tmp+1
+    bpl dividend_pos
+    
+    // negate dividend
+    lda tmp
+    eor #$ff
+    sta tmp
+    lda tmp+1
+    eor #$ff
+    sta tmp+1
+    inc2 tmp
+
+    bit tmp+3
+    bmi negate_divisor
+    dec sgn             // tmp neg, tmp+1 pos
+    jmp divide
+
+dividend_pos:
+    bit tmp+3
+    bpl divide
+    dec sgn            // tmp pos, tmp+1 neg
+
+negate_divisor: 
+    lda tmp+2
+    eor #$ff
+    sta tmp+2
+    lda tmp+3
+    eor #$ff
+    sta tmp+3
+    inc2 tmp+2
+
+divide:
+    jsr _udiv16
+
+    bit sgn
+    bpl done            // if result should be positive, done!
+
+    // Negate tmp
+    lda tmp 
+    eor #$ff
+    sta tmp
+    lda tmp+1
+    eor #$ff
+    sta tmp+1
+    inc2 tmp
+
+done:
+    rts
+}
+
 // -------- END TEMPLATE ---------
 

@@ -97,7 +97,11 @@ int main() {
 Steps towards Milestone 3:
 1. ~~Subtraction~~
 2. ~~Multiplication~~
-3. Integer division
+3. ~~Integer division~~
+    - ~~8 bit unsigned~~
+    - ~~8 bit signed~~
+    - ~~16 bit unsigned~~
+    - ~~16 bit signed~~
 4. Modulus
 
 
