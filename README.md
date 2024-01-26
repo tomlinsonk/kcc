@@ -155,8 +155,9 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 
 ## Supported features
 - `int` and `char` types
-- Assignment expressions (just `=`)
-- Binary operators: `+`, `==`, `!=`, `>>`, `<<`
+- Assignment expressions (using `=`)
+- Binary operators: `+`, `-`, `==`, `!=`, `>>`, `<<`, `*`, `/`, `%`
+- Unary operators: `+`, `-`
 - Postfix operators: `++`, `--`
 - Return statement
 - While loops
@@ -165,8 +166,8 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 
 ## Todo
 - Functions: parameters, function calling
-- Binary operators: `-`, `*`, `/`, `%`, `>`, `<`, `<=`, `^`, `|`, `&`, `&&`, `||` 
-- Unary operators: `*`, `+`, `-`, `~`, `!`, `++`, `--`
+- Binary operators: `>`, `<`, `<=`, `^`, `|`, `&`, `&&`, `||` 
+- Unary operators: `*`, `~`, `!`, `++`, `--`
 - Assigment operators `*=`, `+=`, `-=`, `/=`, `%=`, `<<=`, `>>=`, `&=`, `|=`, `^=`
 - For loops
 - Do-while loops
