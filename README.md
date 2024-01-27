@@ -69,9 +69,9 @@ Steps towards Milestone 2. Need to be able to emit:
     - ~~Parsing~~
     - ~~Emitting~~
 
-#### ~~Milestone 3: Arithmetic (Collatz, but elegant)~~ Completed!
-The next step for the compiler is to flesh out its arithmetic abilities. In
-particular, I want to add -, *, /, and %. This will allow me to compile the 
+#### ~~Milestone 2.5: Arithmetic (Collatz, but elegant)~~ Completed!
+The next incremental step for the compiler is to flesh out its arithmetic abilities.
+In particular, I want to add -, *, /, and %. This will allow me to compile the 
 Collatz program, but without all the hack-y modifications:
 
 ```C
@@ -94,7 +94,7 @@ int main() {
     return i;
 }
 ```
-Steps towards Milestone 3:
+Steps towards Milestone 2.5:
 1. ~~Subtraction~~
 2. ~~Multiplication~~
 3. ~~Integer division~~
@@ -104,6 +104,59 @@ Steps towards Milestone 3:
     - ~~16 bit signed~~
 4. ~~Modulus~~
 
+#### Milestone 3: Sorting
+Time to go big!
+```C
+
+void print_arr(int arr[], int n) {
+    for (int i = 0; i < n; i++) {
+        putchar('0' + i);
+        putchar(' ');
+    }
+    putchar('\n')
+}
+
+void insertion_sort(int arr[], int n) {
+    int tmp;
+    int j;
+
+    for (int i = 1; i < n; i++) {
+        j = i;
+        while (j > 0 && arr[j-1] > arr[j]) {
+            tmp = arr[j];
+            arr[j] = arr[j-1];
+            arr[j-1] = tmp;
+            j--;
+        }
+    }
+}
+
+int main() {
+    int arr[10];
+    int n;
+
+    n = 10;
+
+    for (int i = 0; i < n; i++) {
+        arr[i] = (7 * i) % 10;
+    }
+
+    print_arr(arr, n);
+    insertion_sort(arr, n);
+    print_arr(arr, n);
+}
+```
+
+Steps towards Milestone 3:
+- Static arrays
+    - Declaration
+    - Indexing
+- For loops
+- Comparisons: `<`, `>`, `<=`, `>=`
+- Logical operators: `&&`, `||`, `!` 
+- Function calling with parameters
+- char literals
+- `putchar`
 
 
 ## Design details
