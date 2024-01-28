@@ -43,6 +43,7 @@ static struct Type VOID_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=VOID_PRIMITIVE,
 static struct Type ERROR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=ERROR_PRIMITIVE, .bytes=-1};
 
 static struct Type CHAR_ARRAY_TYPE = {.kind=ARRAY_TYPE, .of_type=&CHAR_TYPE};
+static struct Type INT_ARRAY_TYPE = {.kind=ARRAY_TYPE, .of_type=&INT_TYPE};
 static struct Type MAIN_FUNCTION_TYPE = {.kind=FUNCTION_TYPE, .return_type=&INT_TYPE};
 
 

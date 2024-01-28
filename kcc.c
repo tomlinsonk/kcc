@@ -23,7 +23,7 @@
  * @return a status code indicating the number of errors that occurred (0 = success) 
  */
 int main() {
-    FILE *fp = fopen("input.txt", "r");
+    FILE *fp = fopen("input/input.c", "r");
 
     int size = fsize(fp);
     char input[size+1];

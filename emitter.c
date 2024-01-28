@@ -113,6 +113,28 @@ void free_labels() {
 
 
 /**
+ * Determine the number of bytes a variable needs on the stack
+ * @param node a declarator (base case: identifier) node 
+ * @return the number of bytes to allocate on the stack
+*/
+int get_declarator_size(struct SyntaxNode *node) {
+    struct Type *t;
+    if (node->syntax == IDENTIFIER_SYNTAX) {
+        t = node->symbol->type;
+        while (t->kind == ARRAY_TYPE)
+            t = t->of_type;
+        return t->bytes;
+    } else if (node->syntax == DECLARATOR_SYNTAX) {
+        return get_declarator_size(node->first_child);
+    } else if (node->syntax == ARRAY_DECLARATOR_SYNTAX) {
+        return node->last_child->token->int_value * get_declarator_size(node->first_child);
+    }
+
+    printf(BOLD_RED "Error: don't know size of %s\n" RESET, syntax_names[node->syntax]);
+    return 0;
+}
+
+/**
  * Emits the 65C02 assembly code for the given bound SyntaxTree
  * @param root the root of the syntax tree (a translation unit node)
  */
@@ -162,7 +184,6 @@ void emit_function_definition(struct SyntaxNode *node) {
 
     end_chunk("function setup");
 
-
     // Emit function body
     emit_compound_statement(node->last_child);
 
@@ -206,11 +227,9 @@ void emit_compound_statement(struct SyntaxNode *node) {
 
     // Push space for locals if there are declarations
     if (node->first_child != NULL && node->first_child->syntax == DECLARATION_LIST_SYNTAX) {
-        struct Symbol *decl_symbol;
         for (struct SyntaxNode *declaration = node->first_child->first_child; declaration != NULL; declaration = declaration->next) {
-            decl_symbol = declaration->last_child->symbol;
-            n_local_bytes += decl_symbol->type->bytes;
-            decl_symbol->offset = -n_local_bytes;
+            n_local_bytes += get_declarator_size(declaration->last_child);
+            declaration->last_child->first_child->symbol->offset = -n_local_bytes;
         }
 
         if (n_local_bytes > 0)

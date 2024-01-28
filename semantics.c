@@ -26,19 +26,31 @@ int num_semantic_errors = 0;
 
 
 /**
- * Determine the type of a declaration specifier
- * @param node the declaration specifier node
- * @return a pointer to the type corresponding to the declaration specifier
+ * Determine the type of a declaration
+ * @param specifier_node the declaration specifier node
+ * @param declarator_node the declarator node
+ * @return a pointer to the type corresponding to the declaration
  */
-struct Type *get_declaration_specifier_type(struct SyntaxNode *node) {
-    if (node != NULL && node->token != NULL) {
-        switch (node->token->kind) {
-        case INT_KEYWORD_TOKEN:
-            return &INT_TYPE;    
-        case CHAR_KEYWORD_TOKEN:
-            return &CHAR_TYPE;
-        default:
-            break;
+struct Type *get_declaration_type(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node) {
+    if (specifier_node != NULL && specifier_node->token != NULL) {
+        if (declarator_node->syntax == ARRAY_DECLARATOR_SYNTAX) {
+            switch (specifier_node->token->kind) {
+            case INT_KEYWORD_TOKEN:
+                return &INT_ARRAY_TYPE;    
+            case CHAR_KEYWORD_TOKEN:
+                return &CHAR_ARRAY_TYPE;
+            default:
+                break;
+            }
+        } else {
+            switch (specifier_node->token->kind) {
+            case INT_KEYWORD_TOKEN:
+                return &INT_TYPE;    
+            case CHAR_KEYWORD_TOKEN:
+                return &CHAR_TYPE;
+            default:
+                break;
+            }
         }
     }
 
@@ -310,8 +322,8 @@ void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *sym
  * @param symbol_table a pointer to the current scope's symbol table
  */
 void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table) {
-    struct Type *type = get_declaration_specifier_type(specifier_node);
-    char *name = copy_identifier_name(declarator_node);
+    struct Type *type = get_declaration_type(specifier_node, declarator_node);
+    char *name = copy_identifier_name(declarator_node->first_child);
     struct Symbol *symbol;
 
 
@@ -320,7 +332,8 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
         if (get_symbol_in_table(symbol_table, name) == NULL) {
             symbol = new_symbol(name, type);
             add_symbol(symbol_table, symbol);
-            declarator_node->symbol = symbol;
+            declarator_node->first_child->symbol = symbol;
+            declarator_node->type = type;
             declarator_node->type = type;
         } else {
             num_semantic_errors++;
@@ -364,11 +377,11 @@ void bind_identifier(struct SyntaxNode *identifier_node, struct SymbolTable *sym
  * @param symbol_table a pointer to the current scope's symbol table
  */
 void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table) {
-    char *name = copy_identifier_name(node->first_child->next);
+    char *name = copy_identifier_name(node->first_child->next->first_child);
     struct Symbol *symbol;
 
     struct Type *type = new_type(FUNCTION_TYPE);
-    type->return_type = get_declaration_specifier_type(node->first_child);
+    type->return_type = get_declaration_type(node->first_child, node->last_child);
     node->type = type;
 
     // TODO: process parameter list, add to parameter type list

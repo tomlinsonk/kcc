@@ -66,10 +66,10 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     case ASSIGNMENT_EXPRESSION_SYNTAX:
     case DECLARATION_SPECIFIER_SYNTAX:
     case POSTFIX_EXPRESSION_SYNTAX:
-        printf(" %s", token_kind_names[root->token->kind]);
+        if (root->token != NULL)
+            printf(" %s", token_kind_names[root->token->kind]);
         break;
     case IDENTIFIER_SYNTAX:
-    case DECLARATOR_SYNTAX:
         printf(" %.*s" , root->token->length, root->token->string_value);
         break;
     default:
@@ -424,13 +424,22 @@ struct SyntaxNode *parse_declaration_specifier() {
  * @return a pointer to the declarator node
  */
 struct SyntaxNode *parse_declarator() {
-    struct SyntaxNode *node = new_syntax_node(DECLARATOR_SYNTAX, cur_token);
+    struct SyntaxNode *node = new_syntax_node(DECLARATOR_SYNTAX, NULL);
+    struct SyntaxNode *new_node;
 
     if (cur_token->kind == IDENTIFIER_TOKEN) {
+        add_syntax_child(node, new_syntax_node(IDENTIFIER_SYNTAX, cur_token));
         cur_token = cur_token->next;
+
+        if (cur_token->kind == OPEN_BRACKET_TOKEN) {
+            node->syntax = ARRAY_DECLARATOR_SYNTAX;
+            match(OPEN_BRACKET_TOKEN);
+            add_syntax_child(node, new_syntax_node(INT_CONSTANT_SYNTAX, cur_token));
+            match(INT_CONSTANT_TOKEN);
+            match(CLOSE_BRACKET_TOKEN);
+        }
     } else {
         node->syntax = ERROR_SYNTAX;
-        node->token = NULL;
         num_syntax_errors++;
         printf(BOLD_RED "Error: expected identifier, got ");
         printf("\"%.*s\"\n" RESET, cur_token->length, input + cur_token->index);
@@ -637,6 +646,15 @@ struct SyntaxNode *parse_unary_expression() {
 struct SyntaxNode *parse_postfix_expression() {
     struct SyntaxNode *node = parse_primary_expression();
     struct SyntaxNode *new_node;
+
+    if (cur_token->kind == OPEN_BRACKET_TOKEN) {
+        new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
+        add_syntax_child(new_node, node);
+        node = new_node;
+        match(OPEN_BRACKET_TOKEN);
+        add_syntax_child(node, parse_expression());
+        match(CLOSE_BRACE_TOKEN);
+    }
 
     while (cur_token->kind == PLUS_PLUS_TOKEN || cur_token->kind == MINUS_MINUS_TOKEN) {
         new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
