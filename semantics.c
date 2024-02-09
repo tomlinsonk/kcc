@@ -244,21 +244,42 @@ void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *s
 
     // TODO: other postfix expressions
 
+     // TODO: check for any lvalue rather than only identifier
+    if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
+        printf(BOLD_RED "Error: postfix operator %s is not applicable to syntax %s \n" RESET, token_kind_names[root->token->kind], syntax_names[root->first_child->syntax]);
+        num_semantic_errors++;
+    }
+
     switch (root->token->kind) {
     case PLUS_PLUS_TOKEN:
     case MINUS_MINUS_TOKEN:
-        // TODO: check for any lvalue rather than only identifier
-        if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
-            printf(BOLD_RED "Error: postfix operator %s is not applicable to syntax %s \n" RESET, token_kind_names[root->token->kind], syntax_names[root->first_child->syntax]);
-            num_semantic_errors++;
-        }
-
         if (is_numeric(root->first_child->type)) {
             root->type = root->first_child->type;
         } else {
             root->type = &ERROR_TYPE;
             
             printf(BOLD_RED "Error: postfix operator %s is not applicable to type ",  token_kind_names[root->token->kind]);
+            print_type(root->first_child->type);
+            printf("\n" RESET);
+
+            num_semantic_errors++;
+        }
+        break;
+    case OPEN_BRACKET_TOKEN:
+        typecheck(root->first_child->next, symbol_table);
+
+        if (root->first_child->type->kind == ARRAY_TYPE) {
+            if (is_numeric(root->first_child->next->type)) {
+                root->type = root->first_child->type->of_type;
+            } else {
+                root->type = &ERROR_TYPE;
+                printf(BOLD_RED "Error: array index must be numeric\n" RESET);
+                num_semantic_errors++;
+            }
+        } else {
+            root->type = &ERROR_TYPE;
+            
+            printf(BOLD_RED "Error: postfix operator [ ] is not applicable to type ");
             print_type(root->first_child->type);
             printf("\n" RESET);
 

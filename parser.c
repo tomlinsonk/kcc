@@ -427,6 +427,9 @@ struct SyntaxNode *parse_declarator() {
     struct SyntaxNode *node = new_syntax_node(DECLARATOR_SYNTAX, NULL);
     struct SyntaxNode *new_node;
 
+
+    // TODO: parse nested array declarators
+
     if (cur_token->kind == IDENTIFIER_TOKEN) {
         add_syntax_child(node, new_syntax_node(IDENTIFIER_SYNTAX, cur_token));
         cur_token = cur_token->next;
