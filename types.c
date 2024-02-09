@@ -104,13 +104,15 @@ struct Type *new_type(enum TypeKind kind) {
  * @return 1 if we can convert from_type to to_type, otherwise 0
 */
 int can_autoconvert(struct Type *from_type, struct Type *to_type) {
-    switch (from_type->kind) {
-    case PRIMITIVE_TYPE:
-        if ((from_type->primitive == INT_PRIMITIVE && to_type->primitive == CHAR_PRIMITIVE) 
-         || (from_type->primitive == CHAR_PRIMITIVE && to_type->primitive == INT_PRIMITIVE)
-        ) return 1;
-    default:
-        break;
+    if (from_type != NULL && to_type != NULL) {
+        switch (from_type->kind) {
+        case PRIMITIVE_TYPE:
+            if ((from_type->primitive == INT_PRIMITIVE && to_type->primitive == CHAR_PRIMITIVE) 
+            || (from_type->primitive == CHAR_PRIMITIVE && to_type->primitive == INT_PRIMITIVE))
+                return 1;
+        default:
+            break;
+        }
     }
 
     return 0;

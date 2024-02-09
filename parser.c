@@ -653,7 +653,7 @@ struct SyntaxNode *parse_postfix_expression() {
         node = new_node;
         match(OPEN_BRACKET_TOKEN);
         add_syntax_child(node, parse_expression());
-        match(CLOSE_BRACE_TOKEN);
+        match(CLOSE_BRACKET_TOKEN);
     }
 
     while (cur_token->kind == PLUS_PLUS_TOKEN || cur_token->kind == MINUS_MINUS_TOKEN) {

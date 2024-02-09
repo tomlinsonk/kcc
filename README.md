@@ -149,7 +149,7 @@ int main() {
 
 Steps towards Milestone 3:
 - Static arrays
-    - Declaration
+    -~~Declaration~~
     - Indexing
 - For loops
 - Comparisons: `<`, `>`, `<=`, `>=`
