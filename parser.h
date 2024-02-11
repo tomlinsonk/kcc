@@ -95,7 +95,8 @@ struct SyntaxNode *parse_function_definition();
 struct SyntaxNode *parse_declaration_list();
 struct SyntaxNode *parse_declaration();
 struct SyntaxNode *parse_declaration_specifier();
-struct SyntaxNode *parse_declarator();
+struct SyntaxNode *parse_direct_declarator();
+struct SyntaxNode *parse_array_declarator(struct SyntaxNode *identifier_node);
 
 struct SyntaxNode *parse_statement_list();
 struct SyntaxNode *parse_statement();

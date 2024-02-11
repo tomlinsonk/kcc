@@ -335,7 +335,7 @@ struct SyntaxNode *parse_function_definition() {
     struct SyntaxNode *node = new_syntax_node(FUNCTION_DEFINITION_SYNTAX, NULL);
     
     add_syntax_child(node, parse_declaration_specifier());
-    add_syntax_child(node, parse_declarator());
+    add_syntax_child(node, parse_direct_declarator());
 
     match(OPEN_PAREN_TOKEN);
     // add_syntax_child(node, parse_parameter_list()); // TODO: parse parameter list
@@ -391,7 +391,7 @@ struct SyntaxNode *parse_declaration() {
     struct SyntaxNode *node = new_syntax_node(DECLARATION_SYNTAX, NULL);
 
     add_syntax_child(node, parse_declaration_specifier());
-    add_syntax_child(node, parse_declarator());
+    add_syntax_child(node, parse_direct_declarator());
     match(SEMICOLON_TOKEN);
 
     return node;
@@ -419,27 +419,24 @@ struct SyntaxNode *parse_declaration_specifier() {
 }
 
 /**
- * Parse a declarator (currently just an identifier)
- * TODO: process more complex declarators (like *x, x[], ...)
+ * Parse a direct declarator (i.e., not pointer)
  * @return a pointer to the declarator node
  */
-struct SyntaxNode *parse_declarator() {
+struct SyntaxNode *parse_direct_declarator() {
     struct SyntaxNode *node = new_syntax_node(DECLARATOR_SYNTAX, NULL);
-    struct SyntaxNode *new_node;
-
-
-    // TODO: parse nested array declarators
 
     if (cur_token->kind == IDENTIFIER_TOKEN) {
         add_syntax_child(node, new_syntax_node(IDENTIFIER_SYNTAX, cur_token));
-        cur_token = cur_token->next;
+        match(IDENTIFIER_TOKEN);
 
         if (cur_token->kind == OPEN_BRACKET_TOKEN) {
             node->syntax = ARRAY_DECLARATOR_SYNTAX;
-            match(OPEN_BRACKET_TOKEN);
-            add_syntax_child(node, new_syntax_node(INT_CONSTANT_SYNTAX, cur_token));
-            match(INT_CONSTANT_TOKEN);
-            match(CLOSE_BRACKET_TOKEN);
+            while (cur_token->kind == OPEN_BRACKET_TOKEN) {
+                match(OPEN_BRACKET_TOKEN);
+                add_syntax_child(node, new_syntax_node(INT_CONSTANT_SYNTAX, cur_token));
+                match(INT_CONSTANT_TOKEN);
+                match(CLOSE_BRACKET_TOKEN);
+            }
         }
     } else {
         node->syntax = ERROR_SYNTAX;
@@ -449,7 +446,6 @@ struct SyntaxNode *parse_declarator() {
     }
 
     return node;
-
 }
 
 /**
