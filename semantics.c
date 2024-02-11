@@ -34,14 +34,31 @@ int num_semantic_errors = 0;
 struct Type *get_declaration_type(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node) {
     if (specifier_node != NULL && specifier_node->token != NULL) {
         if (declarator_node->syntax == ARRAY_DECLARATOR_SYNTAX) {
+            struct Type *type;
+            struct Type *arr_type;
+            struct SyntaxNode *cur_node;
+
             switch (specifier_node->token->kind) {
             case INT_KEYWORD_TOKEN:
-                return &INT_ARRAY_TYPE;    
+                type = &INT_TYPE;  
+                break;  
             case CHAR_KEYWORD_TOKEN:
-                return &CHAR_ARRAY_TYPE;
+                type = &CHAR_TYPE;
+                break;
             default:
+                type = &ERROR_TYPE;
                 break;
             }
+
+            cur_node = declarator_node->first_child->next;
+            while (cur_node != NULL) {
+                cur_node = cur_node->next;
+                arr_type = new_type(ARRAY_TYPE);
+                arr_type->of_type = type;
+                type = arr_type; 
+            }
+
+            return type;
         } else {
             switch (specifier_node->token->kind) {
             case INT_KEYWORD_TOKEN:
