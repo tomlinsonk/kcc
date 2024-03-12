@@ -646,7 +646,7 @@ struct SyntaxNode *parse_postfix_expression() {
     struct SyntaxNode *node = parse_primary_expression();
     struct SyntaxNode *new_node;
 
-    if (cur_token->kind == OPEN_BRACKET_TOKEN) {
+    while (cur_token->kind == OPEN_BRACKET_TOKEN) {
         new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
         add_syntax_child(new_node, node);
         node = new_node;
