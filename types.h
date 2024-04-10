@@ -34,13 +34,13 @@ struct Type {
         struct Type *return_type;
     };
     struct Type *next_param_type;
-    int bytes;
+    int size;
 };
 
-static struct Type INT_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_PRIMITIVE, .bytes=2};
-static struct Type CHAR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=CHAR_PRIMITIVE, .bytes=1};
-static struct Type VOID_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=VOID_PRIMITIVE, .bytes=-1};
-static struct Type ERROR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=ERROR_PRIMITIVE, .bytes=-1};
+static struct Type INT_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=INT_PRIMITIVE, .size=2};
+static struct Type CHAR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=CHAR_PRIMITIVE, .size=1};
+static struct Type VOID_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=VOID_PRIMITIVE, .size=-1};
+static struct Type ERROR_TYPE = {.kind=PRIMITIVE_TYPE, .primitive=ERROR_PRIMITIVE, .size=-1};
 
 static struct Type CHAR_ARRAY_TYPE = {.kind=ARRAY_TYPE, .of_type=&CHAR_TYPE};
 static struct Type INT_ARRAY_TYPE = {.kind=ARRAY_TYPE, .of_type=&INT_TYPE};
@@ -54,5 +54,6 @@ int types_match(struct Type *t1, struct Type *t2);
 int can_autoconvert(struct Type *from_type, struct Type *to_type);
 struct Type *get_binary_expression_type(struct Type *t1, struct Type *t2);
 int is_numeric(struct Type *t);
+int get_memory_size(struct Type *t);
 
 #endif

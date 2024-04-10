@@ -38,7 +38,7 @@ void print_table(struct SymbolTable *table) {
         current = (table->symbols)[i];
 
         while (current != NULL) {
-            printf("(%s, %u) ", current->name, hash(current->name));
+            printf("(%s, %u, %i) ", current->name, hash(current->name), current->type->size);
             current = current->next;
         }
 

@@ -113,28 +113,6 @@ void free_labels() {
 
 
 /**
- * Determine the number of bytes a variable needs on the stack
- * @param node a declarator (base case: identifier) node 
- * @return the number of bytes to allocate on the stack
-*/
-int get_declarator_size(struct SyntaxNode *node) {
-    struct Type *t;
-    if (node->syntax == IDENTIFIER_SYNTAX) {
-        t = node->symbol->type;
-        while (t->kind == ARRAY_TYPE)
-            t = t->of_type;
-        return t->bytes;
-    } else if (node->syntax == DECLARATOR_SYNTAX) {
-        return get_declarator_size(node->first_child);
-    } else if (node->syntax == ARRAY_DECLARATOR_SYNTAX) {
-        return node->last_child->token->int_value * get_declarator_size(node->first_child);
-    }
-
-    printf(BOLD_RED "Error: don't know size of %s\n" RESET, syntax_names[node->syntax]);
-    return 0;
-}
-
-/**
  * Emits the 65C02 assembly code for the given bound SyntaxTree
  * @param root the root of the syntax tree (a translation unit node)
  */
@@ -203,9 +181,9 @@ void emit_function_definition(struct SyntaxNode *node) {
     emit("sta fp+1");
 
     // store return value in registers, if any
-    if (symbol->type->return_type->bytes == 1) {
+    if (symbol->type->return_type->size == 1) {
         emit("lda ret");
-    } else if (symbol->type->return_type->bytes == 2) {
+    } else if (symbol->type->return_type->size == 2) {
         emit("lda ret");
         emit("ldx ret+1");
     }
@@ -228,7 +206,7 @@ void emit_compound_statement(struct SyntaxNode *node) {
     // Push space for locals if there are declarations
     if (node->first_child != NULL && node->first_child->syntax == DECLARATION_LIST_SYNTAX) {
         for (struct SyntaxNode *declaration = node->first_child->first_child; declaration != NULL; declaration = declaration->next) {
-            n_local_bytes += get_declarator_size(declaration->last_child);
+            n_local_bytes += get_memory_size(declaration->last_child->type);
             declaration->last_child->first_child->symbol->offset = -n_local_bytes;
         }
 
@@ -289,7 +267,7 @@ void emit_statement(struct SyntaxNode *node) {
 void emit_expression_statement(struct SyntaxNode *node) {
     if (node->first_child != NULL) {
         emit_expression(node->first_child);
-        emit("add2 sp : #%i", node->first_child->type->bytes);
+        emit("add2 sp : #%i", node->first_child->type->size);
     }
 }
 
@@ -335,7 +313,7 @@ void emit_expression(struct SyntaxNode *node) {
 */
 void emit_int_constant(struct SyntaxNode *node) {
     start_chunk("int constant");
-    if (node->type->bytes == 2) {
+    if (node->type->size == 2) {
         emit("lda #>%i", node->token->int_value);
         emit("jsr _push");
     }
@@ -422,7 +400,7 @@ void emit_unary_expression(struct SyntaxNode *node) {
 */
 void emit_unary_minus_expression(struct SyntaxNode *node) {
     start_chunk("unary -");
-    if (node->type->bytes == 2) {
+    if (node->type->size == 2) {
         emit("ldy #1");
         emit("lda (sp),y");
         emit("eor #$ff");
@@ -435,7 +413,7 @@ void emit_unary_minus_expression(struct SyntaxNode *node) {
         emit("eor #$ff");
         emit("adc #0");
         emit("sta (sp),y");
-    } else if (node->type->bytes == 1) {
+    } else if (node->type->size == 1) {
         emit("ldy #1");
         emit("lda (sp),y");
         emit("eor #$ff");
@@ -452,21 +430,9 @@ void emit_unary_minus_expression(struct SyntaxNode *node) {
 */
 void emit_plus_binary_expression(struct SyntaxNode *node) {
     start_chunk("+ expression");
-    if (node->type->bytes == 2) {
-        emit("jsr _pop");
-        emit("sta tmp");
-        emit("jsr _pop");
-        emit("sta tmp+1");
-        emit("ldy #1");
-        emit("clc");
-        emit("lda tmp");
-        emit("adc (sp),y");
-        emit("sta (sp),y");
-        emit("iny");
-        emit("lda tmp+1");
-        emit("adc (sp),y");
-        emit("sta (sp),y");
-    } else if (node->type->bytes == 1) {
+    if (node->type->size == 2) {
+        emit_two_byte_add();
+    } else if (node->type->size == 1) {
         emit("jsr _pop");
         emit("ldy #1");
         emit("clc");
@@ -482,7 +448,7 @@ void emit_plus_binary_expression(struct SyntaxNode *node) {
 */
 void emit_minus_binary_expression(struct SyntaxNode *node) {
     start_chunk("- expression");
-    if (node->type->bytes == 2) {
+    if (node->type->size == 2) {
         emit("jsr _pop");
         emit("sta tmp");
         emit("jsr _pop");
@@ -496,7 +462,7 @@ void emit_minus_binary_expression(struct SyntaxNode *node) {
         emit("lda (sp),y");
         emit("sbc tmp+1");
         emit("sta (sp),y");
-    } else if (node->type->bytes == 1) {
+    } else if (node->type->size == 1) {
         emit("jsr _pop");
         emit("sta tmp");
         emit("ldy #1");
@@ -515,21 +481,9 @@ void emit_minus_binary_expression(struct SyntaxNode *node) {
 */
 void emit_times_binary_expression(struct SyntaxNode *node) {
     start_chunk("* expression");
-    if (node->type->bytes == 2) {
-        emit("jsr _pop");
-        emit("sta tmp");
-        emit("jsr _pop");
-        emit("sta tmp+1");
-        emit("jsr _pop");
-        emit("sta tmp+2");
-        emit("jsr _pop");
-        emit("sta tmp+3");
-        emit("jsr _mul16");
-        emit("lda tmp+5");
-        emit("jsr _push");
-        emit("lda tmp+4");
-        emit("jsr _push");
-    } else if (node->type->bytes == 1) {
+    if (node->type->size == 2) {
+        emit_two_byte_multiply();
+    } else if (node->type->size == 1) {
         emit("jsr _pop");
         emit("sta tmp");
         emit("jsr _pop");
@@ -627,7 +581,7 @@ void emit_shift(struct SyntaxNode *node, int left) {
     struct Label *all_zeros = new_label();
     struct Label *done = new_label();
 
-    if (node->type->bytes == 1) {
+    if (node->type->size == 1) {
         emit("jsr _pop");
         emit("cmp #0");
         emit("beq %s", done->name); // if shifting by 0 bits, result is unchanged
@@ -648,7 +602,7 @@ void emit_shift(struct SyntaxNode *node, int left) {
         emit("jsr _pop");
         emit("lda #0");
         emit("jsr _push");
-    } else if (node->type->bytes == 2) {
+    } else if (node->type->size == 2) {
         emit("jsr _pop");
         emit("tax");
         emit("jsr _pop");
@@ -714,7 +668,7 @@ void emit_equals_binary_expression(struct SyntaxNode *node) {
     struct Label *done_label = new_label();
 
     start_chunk("== expression");
-    if (node->type->bytes == 1) {
+    if (node->type->size == 1) {
         emit("jsr _pop");
         emit("sta tmp");
         emit("jsr _pop");
@@ -728,7 +682,7 @@ void emit_equals_binary_expression(struct SyntaxNode *node) {
 
         emit_label(done_label);
         emit("jsr _push");
-    } else if (node->type->bytes == 2) {
+    } else if (node->type->size == 2) {
         emit("jsr _pop");
         emit("sta tmp");
         emit("jsr _pop");
@@ -776,18 +730,26 @@ void emit_not_equals_binary_expression(struct SyntaxNode *node) {
 
 
 /**
- * Emit assembly to push an identifier onto the stack
+ * Emit assembly to push an identifier onto the stack. If it's an array,
+ * pushes the starting address, otherwise pushes the value of the identifier. 
  * @param node the identifier node
  */
 void emit_identifier(struct SyntaxNode *node) {
     start_chunk("identifier");
 
-    if (node->type->bytes == 1) {
+    if (node->type->kind == ARRAY_TYPE) {
+        emit("mov2 fp : tmp");
+        emit("add2 tmp : #%i", node->symbol->offset + 1);
+        emit("lda tmp+1");
+        emit("jsr _push");
+        emit("lda tmp");
+        emit("jsr _push"); 
+    } else if (node->type->size == 1) {
         emit("mov2 fp : tmp");
         emit("add2 tmp : #%i", node->symbol->offset + 1);
         emit("lda (tmp)");
         emit("jsr _push");
-    } else if (node->type->bytes == 2) {
+    } else if (node->type->size == 2) {
         emit("mov2 fp : tmp");
         emit("add2 tmp : #%i", node->symbol->offset + 2);
         emit("lda (tmp)");
@@ -806,12 +768,25 @@ void emit_identifier(struct SyntaxNode *node) {
  * @param node the assignment expression node
  */
 void emit_assignment_expression(struct SyntaxNode *node) {
+    if (node->first_child->syntax == IDENTIFIER_SYNTAX) {
+        emit_simple_assignment_expression(node);
+    } else {
+        emit_complex_assignment_expression(node);
+    }
+}
+
+/**
+ * Emit assembly for an assignment expression in which the lvalue is an
+ * identifier. 
+ * @param node the assignment expression node
+*/
+void emit_simple_assignment_expression(struct SyntaxNode *node) {
     emit_expression(node->last_child);
 
     if (!types_match(node->type, node->last_child->type)) 
         emit_type_conversion(node->last_child->type, node->type);
 
-    start_chunk("assignment");
+    start_chunk("simple assignment");
 
     emit("mov2 fp : tmp");
     emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
@@ -819,14 +794,43 @@ void emit_assignment_expression(struct SyntaxNode *node) {
     emit("lda (sp),y");
     emit("sta (tmp)");
 
-    if (node->type->bytes == 2) {
+    if (node->type->size == 2) {
         emit("inc2 tmp");
         emit("iny");
         emit("lda (sp),y");
         emit("sta (tmp)");
     }
 
-    end_chunk("assignment");
+    end_chunk("simple assignment");
+}
+
+
+/**
+ * Emit assembly for an assignment expression in which the lvalue is not just
+ * an identifier and needs to be computed.
+ * 1) compute the memory address of the lvalue and push it onto the stack
+ * 2) compute the value to assign and push it onto the stack
+ * 3) pop the value and the address and update the value at the address 
+ * @param node the assignment expression node
+*/
+void emit_complex_assignment_expression(struct SyntaxNode *node) {
+    // compute the address and push it onto the stack
+    emit_expression(node->first_child);
+
+    // compute the new value and push it onto the stack
+    emit_expression(node->last_child);
+
+    // If necessary, convert the value's type
+    if (!types_match(node->type, node->last_child->type)) 
+        emit_type_conversion(node->last_child->type, node->type);
+
+    start_chunk("complex assignment");
+
+    printf(BOLD_RED "TODO: emit complex assignment expression\n" RESET);
+
+
+    end_chunk("complex assignment");
+
 
 }
 
@@ -843,8 +847,11 @@ void emit_postfix_expression(struct SyntaxNode *node) {
     case MINUS_MINUS_TOKEN:
         emit_decrement_postfix_expression(node);
         break;
+    case OPEN_BRACKET_TOKEN:
+        emit_array_index_postfix_expression(node);
+        break;
     default:
-        printf(BOLD_RED "Error: can't emit postfix operator %s" RESET, token_kind_names[node->token->kind]);
+        printf(BOLD_RED "Error: can't emit postfix operator %s\n" RESET, token_kind_names[node->token->kind]);
         break;
     }
 }
@@ -863,7 +870,7 @@ void emit_increment_postfix_expression(struct SyntaxNode *node) {
     emit("clc");
     emit("adc #1");
     emit("sta (tmp)");
-    if (node->type->bytes == 2) {
+    if (node->type->size == 2) {
         struct Label *no_carry = new_label();
         emit("bcc %s", no_carry->name);
         emit("inc2 tmp");
@@ -888,7 +895,7 @@ void emit_decrement_postfix_expression(struct SyntaxNode *node) {
     emit("sec");
     emit("sbc #1");
     emit("sta (tmp)");
-    if (node->type->bytes == 2) {
+    if (node->type->size == 2) {
         struct Label *no_carry = new_label();
         emit("bcs %s", no_carry->name);
         emit("inc2 tmp");
@@ -898,6 +905,73 @@ void emit_decrement_postfix_expression(struct SyntaxNode *node) {
         emit_label(no_carry);
     }
     end_chunk("-- expression");
+}
+
+
+/**
+ * Emit assembly for an array index expression. If node is an lvalue or has array
+ * type, places the address of the array item on the stack. Otherwise, places the
+ * value of the array item on the stack.
+*/
+void emit_array_index_postfix_expression(struct SyntaxNode *node) {
+    // Push the array address on the stack
+    emit_expression(node->first_child);
+
+    // Push the index onto the stack
+    emit_expression(node->last_child);
+
+    if (!types_match(node->last_child->type, &INT_TYPE))
+        emit_type_conversion(node->last_child->type, &INT_TYPE);
+
+
+    start_chunk("array index expression");
+    int element_size = get_memory_size(node->type);
+
+    if (element_size == 1) {
+        // Do nothing! The index is the offset
+    } else if (element_size == 2) {
+        // Multiply offset by 2
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("asl tmp");
+        emit("rol tmp+1");
+        emit("lda tmp+1");
+        emit("jsr _push");
+        emit("lda tmp");
+        emit("jsr _push");
+    } else {
+        // Do multiply routine to compute offset.
+        emit("lda #>%i", element_size);
+        emit("jsr _push");
+        emit("lda #<%i", element_size);
+        emit("jsr _push");
+
+        emit_two_byte_multiply();
+    }
+
+    emit_two_byte_add();
+
+    // If we want the value rather than the index, retreive it
+    if (!node->is_lvalue && node->type->kind != ARRAY_TYPE) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+
+        if (node->type->size == 2) {
+            emit("inc2 tmp");
+            emit("lda (tmp)");
+            emit("jsr _push");
+            emit("dec2 tmp");
+        }
+
+        emit("lda (tmp)");
+        emit("jsr _push");
+    }
+
+    end_chunk("array index expression");
 }
 
 
@@ -917,7 +991,7 @@ void emit_return_statement(struct SyntaxNode *node) {
         emit("jsr _pop");
         emit("sta ret");
 
-        if (node->type->bytes == 2) {
+        if (node->type->size == 2) {
             emit("jsr _pop");
             emit("sta ret+1");
         }
@@ -939,7 +1013,7 @@ void emit_conditional_statement(struct SyntaxNode *node, int has_else) {
     emit_expression(node->first_child);
     end_chunk("if condition");
 
-    if (node->first_child->type->bytes == 2) {
+    if (node->first_child->type->size == 2) {
         emit("jsr _pop");
         emit("tax");
         emit("jsr _pop");
@@ -947,7 +1021,7 @@ void emit_conditional_statement(struct SyntaxNode *node, int has_else) {
         emit("txa");
         emit("bne %s", start_if->name);
         emit("jmp %s", end_if->name);
-    } else if (node->first_child->type->bytes == 1) {
+    } else if (node->first_child->type->size == 1) {
         emit("jsr _pop");
         emit("bne %s", start_if->name);
         emit("jmp %s", end_if->name);
@@ -980,7 +1054,7 @@ void emit_while_statement(struct SyntaxNode *node) {
     start_chunk("while condition");
     emit_label(while_condition);
     emit_expression(node->first_child);
-    if (node->first_child->type->bytes == 2) {
+    if (node->first_child->type->size == 2) {
         emit("jsr _pop");
         emit("tax");
         emit("jsr _pop");
@@ -988,7 +1062,7 @@ void emit_while_statement(struct SyntaxNode *node) {
         emit("txa");
         emit("bne %s", while_body->name);
         emit("jmp %s", end_while->name);
-    } else if (node->first_child->type->bytes == 1) {
+    } else if (node->first_child->type->size == 1) {
         emit("jsr _pop");
         emit("bne %s", while_body->name);
         emit("jmp %s", end_while->name);
@@ -1037,3 +1111,37 @@ void emit_type_conversion(struct Type *from_type, struct Type *to_type) {
 }
 
 
+
+
+void emit_two_byte_multiply() {
+    emit("jsr _pop");
+    emit("sta tmp");
+    emit("jsr _pop");
+    emit("sta tmp+1");
+    emit("jsr _pop");
+    emit("sta tmp+2");
+    emit("jsr _pop");
+    emit("sta tmp+3");
+    emit("jsr _mul16");
+    emit("lda tmp+5");
+    emit("jsr _push");
+    emit("lda tmp+4");
+    emit("jsr _push");
+}
+
+
+void emit_two_byte_add() {
+    emit("jsr _pop");
+    emit("sta tmp");
+    emit("jsr _pop");
+    emit("sta tmp+1");
+    emit("ldy #1");
+    emit("clc");
+    emit("lda tmp");
+    emit("adc (sp),y");
+    emit("sta (sp),y");
+    emit("iny");
+    emit("lda tmp+1");
+    emit("adc (sp),y");
+    emit("sta (sp),y");
+}

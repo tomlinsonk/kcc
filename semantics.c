@@ -34,30 +34,38 @@ int num_semantic_errors = 0;
 struct Type *get_declaration_type(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node) {
     if (specifier_node != NULL && specifier_node->token != NULL) {
         if (declarator_node->syntax == ARRAY_DECLARATOR_SYNTAX) {
+            struct Type *specifier_type;
             struct Type *type;
-            struct Type *arr_type;
+            struct Type *cur_type;
             struct SyntaxNode *cur_node;
 
             switch (specifier_node->token->kind) {
             case INT_KEYWORD_TOKEN:
-                type = &INT_TYPE;  
+                specifier_type = &INT_TYPE;  
                 break;  
             case CHAR_KEYWORD_TOKEN:
-                type = &CHAR_TYPE;
+                specifier_type = &CHAR_TYPE;
                 break;
             default:
-                type = &ERROR_TYPE;
+                specifier_type = &ERROR_TYPE;
                 break;
             }
 
+            type = new_type(ARRAY_TYPE);
+            
             cur_node = declarator_node->first_child->next;
-            while (cur_node != NULL) {
+            cur_type = type; 
+            while (cur_node->next != NULL) {
+                cur_type->size = cur_node->token->int_value;
+                cur_type->of_type = new_type(ARRAY_TYPE);
+                cur_type = cur_type->of_type;
                 cur_node = cur_node->next;
-                arr_type = new_type(ARRAY_TYPE);
-                arr_type->of_type = type;
-                type = arr_type; 
             }
+            cur_type->size = cur_node->token->int_value;
+            cur_type->of_type = specifier_type;
 
+
+            
             return type;
         } else {
             switch (specifier_node->token->kind) {
@@ -111,6 +119,23 @@ struct Type *get_enclosing_function_return_type(struct SyntaxNode *node) {
         node = node->parent;
 
     return node->type->return_type;
+}
+
+/**
+ * Check if a node is an lvalue (an expression referring to a named region of
+ * memory, like a identifier, or an indexed array).
+ * @param node the node to check
+ * @return 1 if node is an lvalue, 0 if not
+*/
+int is_lvalue(struct SyntaxNode *node) {
+    if (node->syntax == IDENTIFIER_SYNTAX) {
+        return 1;
+    } else if (node->syntax == POSTFIX_EXPRESSION_SYNTAX 
+               && node->token->kind == OPEN_BRACKET_TOKEN) {
+        return is_lvalue(node->first_child);
+    }
+
+    return 0;
 }
 
 /**
@@ -228,9 +253,9 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
     typecheck(root->first_child, symbol_table);
     typecheck(root->last_child, symbol_table);
 
-    // TODO: can assign to any lvalue, not just raw identifiers
-    if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
-        printf(BOLD_RED "Error: can only assign to identifier, not %s\n" RESET,  syntax_names[root->first_child->syntax]);
+    root->first_child->is_lvalue = is_lvalue(root->first_child);
+    if (!root->first_child->is_lvalue) {
+        printf(BOLD_RED "Error: can only assign to lvalue, not %s\n" RESET,  syntax_names[root->first_child->syntax]);
         num_semantic_errors++;
     }
 
@@ -259,11 +284,8 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
 void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     typecheck(root->first_child, symbol_table);
 
-    // TODO: other postfix expressions
-
-     // TODO: check for any lvalue rather than only identifier
-    if (root->first_child->syntax != IDENTIFIER_SYNTAX) {
-        printf(BOLD_RED "Error: postfix operator %s is not applicable to syntax %s \n" RESET, token_kind_names[root->token->kind], syntax_names[root->first_child->syntax]);
+    if (!is_lvalue(root->first_child)) {
+        printf(BOLD_RED "Error: postfix operator %s is only applicable to lvalues, not %s \n" RESET, token_kind_names[root->token->kind], syntax_names[root->first_child->syntax]);
         num_semantic_errors++;
     }
 
@@ -361,6 +383,7 @@ void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *sym
  */
 void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table) {
     struct Type *type = get_declaration_type(specifier_node, declarator_node);
+
     char *name = copy_identifier_name(declarator_node->first_child);
     struct Symbol *symbol;
 

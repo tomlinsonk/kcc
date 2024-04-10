@@ -77,8 +77,10 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     }
 
     printf(" ");
-    if (root-> type != NULL)
+    if (root->type != NULL)
         print_type(root->type);
+    if (root->is_lvalue)
+        printf(" (lvalue)");
     printf("\n");
 
     cur_child = root->first_child;
@@ -244,6 +246,7 @@ struct SyntaxNode *new_syntax_node(enum SyntaxKind syntax, struct Token *token) 
     struct SyntaxNode *node = malloc(sizeof(struct SyntaxNode));
     node->syntax = syntax;
     node->token = token;
+    node->is_lvalue = 0;
     node->type = NULL;
     node->symbol = NULL;
     node->first_child = node->last_child = node->next = node->parent = NULL;

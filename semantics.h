@@ -14,6 +14,10 @@
 extern int num_semantic_errors;
 
 int main_exists(struct SymbolTable *symbol_table);
+struct Type *get_enclosing_function_return_type(struct SyntaxNode *node);
+struct Type *get_declaration_type(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node);
+char *copy_identifier_name(struct SyntaxNode *node);
+int is_lvalue(struct SyntaxNode *node);
 
 void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table);
 void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table);

@@ -66,6 +66,7 @@ struct SyntaxNode {
     enum SyntaxKind syntax;
     struct Token *token;
     struct Type *type;
+    int is_lvalue;
     struct Symbol *symbol;
     struct SyntaxNode *first_child;
     struct SyntaxNode *last_child;

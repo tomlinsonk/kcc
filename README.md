@@ -151,6 +151,8 @@ Steps towards Milestone 3:
 - Static arrays
     -~~Declaration~~
     - Indexing
+        - Assigning to arrays
+        - Retrieving from arrays
 - For loops
 - Comparisons: `<`, `>`, `<=`, `>=`
 - Logical operators: `&&`, `||`, `!` 

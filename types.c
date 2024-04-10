@@ -32,7 +32,7 @@ void print_type(struct Type *type) {
         printf("%s", primitive_type_names[type->primitive]);
         break;
      case ARRAY_TYPE:
-        printf("array of ");
+        printf("array[%i] of ", type->size);
         print_type(type->of_type);
         break;
      case POINTER_TYPE:
@@ -88,7 +88,7 @@ int is_numeric(struct Type *t) {
  * @return a pointer to the new type
  */
 struct Type *new_type(enum TypeKind kind) {
-    struct Type *type = malloc(sizeof(type));
+    struct Type *type = malloc(sizeof(struct Type));
     type->kind = kind;
 
     return type;
@@ -136,4 +136,19 @@ struct Type *get_binary_expression_type(struct Type *t1, struct Type *t2) {
         return &INT_TYPE;
     else
         return &CHAR_TYPE; 
+}
+
+
+/**
+ * Compute the total size of a type. For arrays, this is the length * the size
+ * of each eleement.
+ * @param t the type whose size to compute
+ * @return the number of bytes t occupies in memory
+*/
+int get_memory_size(struct Type *t) {
+    if (t->kind == ARRAY_TYPE) {
+        return t->size * get_memory_size(t->of_type);
+    } else {
+        return t->size;
+    }
 }
