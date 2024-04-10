@@ -387,7 +387,6 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
     char *name = copy_identifier_name(declarator_node->first_child);
     struct Symbol *symbol;
 
-
     if (type != &ERROR_TYPE && name != NULL) {
         // Use get_symbol_in_table rather than get_symbol to allow shadowing
         if (get_symbol_in_table(symbol_table, name) == NULL) {
