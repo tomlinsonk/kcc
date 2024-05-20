@@ -826,12 +826,33 @@ void emit_complex_assignment_expression(struct SyntaxNode *node) {
 
     start_chunk("complex assignment");
 
-    printf(BOLD_RED "TODO: emit complex assignment expression\n" RESET);
+    // Pop the value and store in tmp (and tmp+1 if two bytes)
+    emit("jsr _pop");
+    emit("sta tmp");
+    if (node->type->size == 2) {
+        emit("jsr _pop");
+        emit("sta tmp+1");
+    }
+
+    // Pop the address and store in tmp+2 and tmp+3
+    emit("jsr _pop");
+    emit("sta tmp+2");
+    emit("jsr _pop");
+    emit("sta tmp+3");
+
+    // Store the value at the address, and push it back onto the stack
+    emit("lda tmp");
+    emit("sta (tmp+2)");
+    emit("jsr _push");
+    if (node->type->size == 2) {
+        emit("ldy #1"); 
+        emit("lda tmp+1");
+        emit("sta (tmp+2),y");
+        emit("jsr _push");
+    }
 
 
     end_chunk("complex assignment");
-
-
 }
 
 
@@ -922,7 +943,6 @@ void emit_array_index_postfix_expression(struct SyntaxNode *node) {
 
     if (!types_match(node->last_child->type, &INT_TYPE))
         emit_type_conversion(node->last_child->type, &INT_TYPE);
-
 
     start_chunk("array index expression");
     int element_size = get_memory_size(node->type);
