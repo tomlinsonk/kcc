@@ -148,11 +148,11 @@ int main() {
 ```
 
 Steps towards Milestone 3:
-- Static arrays
+- ~~Static arrays~~
     -~~Declaration~~
-    - Indexing
-        - Assigning to arrays
-        - Retrieving from arrays
+    - ~~Indexing~~
+        - ~~Assigning to arrays~~
+        - ~~Retrieving from arrays~~
 - For loops
 - Comparisons: `<`, `>`, `<=`, `>=`
 - Logical operators: `&&`, `||`, `!` 
@@ -204,9 +204,6 @@ Every program must have function `int main()`. To enter the program, the executa
 ### Expressions
 For simplicity, all expressions are evaluated using the stack. Operands are pushed onto the stack (lhs then rhs) and then popped when an operator is evaluated. The result is then pushed back onto the stack, allowing easy evaluation of nested expressions.
 
-<!-- ## Known bugs
-- ~~Emitter not working for addition that overflows into top byte. Seems to be returning the correct low byte but taking the top byte of the first operand instead of the sum~~ Fixed!    -->
-
 
 ## Supported features
 - `int` and `char` types
@@ -217,7 +214,7 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 - Return statement
 - While loops
 - If and else-if
-
+- Arrays
 
 ## Todo
 - Functions: parameters, function calling
@@ -230,7 +227,6 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 - Labeled statements
 - Initializers
 - Pointers
-- Arrays
 - Structs
 - Enums
 - Unions
