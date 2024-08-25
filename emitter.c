@@ -250,6 +250,9 @@ void emit_statement(struct SyntaxNode *node) {
     case WHILE_STATEMENT_SYNTAX:
         emit_while_statement(node);
         break;
+    case FOR_STATEMENT_SYNTAX:
+        emit_for_statement(node);
+        break;
     case COMPOUND_STATEMENT_SYNTAX:
         emit_compound_statement(node);
         break;
@@ -1097,6 +1100,58 @@ void emit_while_statement(struct SyntaxNode *node) {
     emit("jmp %s", while_condition->name);
     end_chunk("while body");
     emit_label(end_while);
+}
+
+
+/**
+ * Emit assembly for a for loop
+ * @param node the node of the for statement
+ */
+void emit_for_statement(struct SyntaxNode *node) {
+    struct Label *for_condition = new_label();
+    struct Label *for_body = new_label();
+    struct Label *end_for = new_label();
+
+    start_chunk("for init");
+    emit_expression(node->first_child);
+    // pop the value of the initializer off the stack
+    emit("add2 sp : #%i", node->first_child->type->size);
+    end_chunk("for init");
+
+    start_chunk("for condition");
+    emit_label(for_condition);
+    if (node->first_child->next->syntax != NOP_EXPRESSION_SYNTAX) {
+        emit_expression(node->first_child->next);
+
+        if (node->first_child->next->type->size == 2) {
+            emit("jsr _pop");
+            emit("tax");
+            emit("jsr _pop");
+            emit("bne %s", for_body->name);
+            emit("txa");
+            emit("bne %s", for_body->name);
+            emit("jmp %s", end_for->name);
+        } else if (node->first_child->next->type->size == 1) {
+            emit("jsr _pop");
+            emit("bne %s", for_body->name);
+            emit("jmp %s", end_for->name);
+        }
+    }
+    end_chunk("for condition");
+
+    start_chunk("for body");
+    emit_label(for_body);
+    emit_statement(node->last_child);
+    end_chunk("for body");
+
+    start_chunk("for increment");
+    emit_expression(node->first_child->next->next);
+    // pop the value of the increment off the stack
+    emit("add2 sp : #%i", node->first_child->next->next->type->size);
+    end_chunk("for increment");
+    emit("jmp %s", for_condition->name);
+
+    emit_label(end_for);
 }
 
 /**

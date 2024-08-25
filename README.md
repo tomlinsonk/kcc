@@ -153,7 +153,7 @@ Steps towards Milestone 3:
     - ~~Indexing~~
         - ~~Assigning to arrays~~
         - ~~Retrieving from arrays~~
-- For loops
+- ~~For loops~~
 - Comparisons: `<`, `>`, `<=`, `>=`
 - Logical operators: `&&`, `||`, `!` 
 - Function calling with parameters
@@ -162,6 +162,7 @@ Steps towards Milestone 3:
 
 
 ## Design details
+Recall, the 6502 is little-endian (lower order bytes in smaller address)
 
 ### Types
 - `char`: 8-bit unsigned integer
@@ -213,6 +214,7 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 - Postfix operators: `++`, `--`
 - Return statement
 - While loops
+- For loops
 - If and else-if
 - Arrays
 
@@ -221,7 +223,6 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 - Binary operators: `>`, `<`, `<=`, `^`, `|`, `&`, `&&`, `||` 
 - Unary operators: `*`, `~`, `!`, `++`, `--`
 - Assigment operators `*=`, `+=`, `-=`, `/=`, `%=`, `<<=`, `>>=`, `&=`, `|=`, `^=`
-- For loops
 - Do-while loops
 - Switch statements
 - Labeled statements

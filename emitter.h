@@ -34,7 +34,7 @@ void emit_return_statement(struct SyntaxNode *node);
 void emit_expression_statement(struct SyntaxNode *node);
 void emit_conditional_statement(struct SyntaxNode *node, int has_else);
 void emit_while_statement(struct SyntaxNode *node);
-
+void emit_for_statement(struct SyntaxNode *node);
 
 void emit_expression(struct SyntaxNode *node);
 

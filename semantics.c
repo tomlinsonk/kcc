@@ -208,6 +208,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case IF_STATEMENT_SYNTAX: 
     case IF_ELSE_STATEMENT_SYNTAX:
     case WHILE_STATEMENT_SYNTAX:
+    case FOR_STATEMENT_SYNTAX:
     case STATEMENT_LIST_SYNTAX:
         cur_node = root->first_child;
         while (cur_node != NULL) {
