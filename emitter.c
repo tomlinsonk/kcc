@@ -367,6 +367,18 @@ void emit_binary_expression(struct SyntaxNode *node) {
     case BANG_EQUALS_TOKEN:
         emit_not_equals_binary_expression(node);
         break;
+    case LESS_TOKEN:
+        emit_less_binary_expression(node);
+        break;
+    case LESS_EQUALS_TOKEN:
+        emit_less_equals_binary_expression(node);
+        break;
+    case GREATER_TOKEN:
+        emit_greater_binary_expression(node);
+        break;
+    case GREATER_EQUALS_TOKEN:
+        emit_greater_equals_binary_expression(node);
+        break;
     case DOUBLE_GREATER_TOKEN:
         emit_right_shift_binary_expression(node);
         break;
@@ -714,6 +726,84 @@ void emit_equals_binary_expression(struct SyntaxNode *node) {
     }
     end_chunk("== expression");
 }
+
+/**
+ * Emit assembly for a < comparison expression
+ * @param node the syntax node of the expreesion
+*/
+void emit_less_binary_expression(struct SyntaxNode *node) {
+    struct Label *done_label = new_label();
+    struct Label *less_label = new_label();
+    struct Label *not_less_label = new_label();
+
+    start_chunk("< expression");
+    if (node->type->size == 1) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("cmp tmp");
+        emit("bcc %s", less_label->name);
+        emit("lda #0");
+        emit("jmp %s", done_label->name);
+        emit_label(less_label);
+        emit("lda #1");
+        emit_label(done_label);
+        emit("jsr _push");
+    } else if (node->type->size == 2) {
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("jsr _pop");
+        emit("tax");
+        emit("jsr _pop");
+        
+        emit("cmp tmp+1");
+        emit("bcc %s", less_label->name);
+        emit("bne %s", not_less_label->name);
+        emit("cpx tmp");
+        emit("bcs %s", not_less_label->name);
+
+        emit_label(less_label);
+        emit("lda #0");
+        emit("jsr _push");
+        emit("lda #1");
+        emit("jmp %s", done_label->name); 
+
+        emit_label(not_less_label);
+        emit("lda #0");
+        emit("jsr _push");
+        emit("lda #0");
+
+        emit_label(done_label);
+        emit("jsr _push");
+    }
+
+    end_chunk("< expression");
+}
+
+/**
+ * Emit assembly for a <= comparison expression
+ * @param node the syntax node of the expreesion
+*/
+void emit_less_equals_binary_expression(struct SyntaxNode *node) {
+    
+}
+
+/**
+ * Emit assembly for a > comparison expression
+ * @param node the syntax node of the expreesion
+*/
+void emit_greater_binary_expression(struct SyntaxNode *node) {
+    
+}
+
+/**
+ * Emit assembly for a >= comparison expression
+ * @param node the syntax node of the expreesion
+*/
+void emit_greater_equals_binary_expression(struct SyntaxNode *node) {
+} 
 
 
 /**

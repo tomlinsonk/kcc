@@ -72,7 +72,7 @@ Steps towards Milestone 2. Need to be able to emit:
 #### ~~Milestone 2.5: Arithmetic (Collatz, but elegant)~~ Completed!
 The next incremental step for the compiler is to flesh out its arithmetic abilities.
 In particular, I want to add -, *, /, and %. This will allow me to compile the 
-Collatz program, but without all the hack-y modifications:
+Collatz program, but without all the hacky modifications:
 
 ```C
 int main() {
@@ -105,7 +105,7 @@ Steps towards Milestone 2.5:
 4. ~~Modulus~~
 
 #### Milestone 3: Sorting
-Time to go big!
+Time to go big! I want to compile insertion sort:
 ```C
 
 void print_arr(int arr[], int n) {
