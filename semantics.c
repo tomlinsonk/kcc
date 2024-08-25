@@ -174,6 +174,9 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case RETURN_STATEMENT_SYNTAX:
         typecheck_return_statement(root, symbol_table);
         break;
+    case NOP_EXPRESSION_SYNTAX:
+        root->type = &VOID_TYPE;
+        break;
     case INT_CONSTANT_SYNTAX:
         root->type = &INT_TYPE;
         break;

@@ -467,7 +467,7 @@ struct SyntaxNode *parse_statement_list() {
 
 
 /**
- * Parse a statement: for now, expression statement or compound statement
+ * Parse a statement
  * @return a pointer to the statement node
  */
 struct SyntaxNode *parse_statement() {
@@ -480,6 +480,8 @@ struct SyntaxNode *parse_statement() {
         return parse_conditional_statement();
     case WHILE_KEYWORD_TOKEN:
         return parse_while_statement();
+    case FOR_KEYWORD_TOKEN:
+        return parse_for_statement();
     default:
         return parse_expression_statement();
     }
@@ -494,6 +496,8 @@ struct SyntaxNode *parse_expression_statement() {
     
     if (cur_token->kind != SEMICOLON_TOKEN)
         add_syntax_child(node, parse_expression());
+    else
+        add_syntax_child(node, new_syntax_node(NOP_EXPRESSION_SYNTAX, NULL));
     
     match(SEMICOLON_TOKEN);
 
@@ -557,6 +561,30 @@ struct SyntaxNode *parse_while_statement() {
     return node;
 }
 
+/**
+ * Parse a for statement. First child: initialization, second child: condition, third child: increment, fourth child: loop body
+ * @return a pointer to the for statement SyntaxNode
+ */
+struct SyntaxNode *parse_for_statement() {
+    struct SyntaxNode *node = new_syntax_node(FOR_STATEMENT_SYNTAX, cur_token);
+
+    match(FOR_KEYWORD_TOKEN);
+
+    match(OPEN_PAREN_TOKEN);
+    add_syntax_child(node, parse_expression_statement()->first_child);
+    add_syntax_child(node, parse_expression_statement()->first_child);
+
+    if (cur_token->kind == CLOSE_PAREN_TOKEN) 
+        add_syntax_child(node, new_syntax_node(NOP_EXPRESSION_SYNTAX, NULL));
+    else
+        add_syntax_child(node, parse_expression());
+    
+    match(CLOSE_PAREN_TOKEN);
+
+    add_syntax_child(node, parse_statement());
+
+    return node;
+}
 
 /**
  * Parse an expression (delegates to the loosest-binding type, assignment expression)

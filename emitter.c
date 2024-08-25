@@ -293,6 +293,8 @@ void emit_expression(struct SyntaxNode *node) {
     case ASSIGNMENT_EXPRESSION_SYNTAX:
         emit_assignment_expression(node);
         break;
+    case NOP_EXPRESSION_SYNTAX:
+        break;
     case IDENTIFIER_SYNTAX:
         emit_identifier(node);
         break;
