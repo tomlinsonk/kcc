@@ -783,19 +783,75 @@ void emit_less_binary_expression(struct SyntaxNode *node) {
 }
 
 /**
- * Emit assembly for a <= comparison expression
- * @param node the syntax node of the expreesion
-*/
-void emit_less_equals_binary_expression(struct SyntaxNode *node) {
-    
-}
-
-/**
  * Emit assembly for a > comparison expression
  * @param node the syntax node of the expreesion
 */
 void emit_greater_binary_expression(struct SyntaxNode *node) {
-    
+    struct Label *done_label = new_label();
+    struct Label *greater_label = new_label();
+    struct Label *not_greater_label = new_label();
+
+    start_chunk("> expression");
+    if (node->type->size == 1) {
+        emit("jsr _pop");
+        emit("tax");
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("cpx tmp");
+
+        emit("bcc %s", greater_label->name);
+        emit("lda #0");
+        emit("jmp %s", done_label->name);
+        emit_label(greater_label);
+        emit("lda #1");
+        emit_label(done_label);
+        emit("jsr _push");
+    } else if (node->type->size == 2) {
+        emit("jsr _pop");
+        emit("tax");
+        emit("jsr _pop");
+        emit("tay");
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        
+        emit("cpy tmp+1");
+        emit("bcc %s", greater_label->name);
+        emit("bne %s", not_greater_label->name);
+        emit("cpx tmp");
+        emit("bcs %s", not_greater_label->name);
+
+        emit_label(greater_label);
+        emit("lda #0");
+        emit("jsr _push");
+        emit("lda #1");
+        emit("jmp %s", done_label->name); 
+
+        emit_label(not_greater_label);
+        emit("lda #0");
+        emit("jsr _push");
+        emit("lda #0");
+
+        emit_label(done_label);
+        emit("jsr _push");
+    }
+
+    end_chunk("> expression");
+}
+
+/**
+ * Emit assembly for a <= comparison expression
+ * @param node the syntax node of the expreesion
+*/
+void emit_less_equals_binary_expression(struct SyntaxNode *node) {
+    start_chunk("<= expression");
+    emit_greater_binary_expression(node);
+    emit("ldy #1");
+    emit("lda #1");
+    emit("eor (sp),y");
+    emit("sta (sp),y");
+    end_chunk("<= expression");
 }
 
 /**
@@ -803,6 +859,13 @@ void emit_greater_binary_expression(struct SyntaxNode *node) {
  * @param node the syntax node of the expreesion
 */
 void emit_greater_equals_binary_expression(struct SyntaxNode *node) {
+    start_chunk(">= expression");
+    emit_less_binary_expression(node);
+    emit("ldy #1");
+    emit("lda #1");
+    emit("eor (sp),y");
+    emit("sta (sp),y");
+    end_chunk(">= expression");
 } 
 
 
