@@ -385,6 +385,12 @@ void emit_binary_expression(struct SyntaxNode *node) {
     case DOUBLE_LESS_TOKEN:
         emit_left_shift_binary_expression(node);
         break;
+    case DOUBLE_PIPE_TOKEN:
+        emit_or_binary_expression(node);
+        break;
+    case DOUBLE_AMPERSAND_TOKEN:
+        emit_and_binary_expression(node);
+        break;
     default:
         printf(BOLD_RED "Error: can't emit binary operator %s\n" RESET, token_kind_names[node->token->kind]);
         break;
@@ -674,6 +680,48 @@ void emit_left_shift_binary_expression(struct SyntaxNode *node) {
     emit_shift(node, 1);
     end_chunk("<< expression");
 }
+
+/**
+ * Emit assembly for a || binary expression
+ * @param node the expression node
+*/
+void emit_or_binary_expression(struct SyntaxNode *node) {
+    struct Label *true_label = new_label();
+    struct Label *done_label = new_label();
+
+    start_chunk("|| expression");
+    emit("stz tmp");
+    emit("ldx #0");
+    for (int i = 0; i < node->type->size * 2; i++) {
+        emit("jsr _pop");
+        emit("ora tmp");
+        emit("sta tmp");
+    }
+    emit("lda tmp");
+    emit("bne %s", true_label->name);
+    emit("jmp %s", done_label->name);
+
+    emit_label(true_label);
+    emit("inx");
+
+    emit_label(done_label);
+    emit("lda #0");
+    for (int i = 0; i < node->type->size - 1; i++)
+        emit("jsr _push");
+    emit("txa");
+    emit("jsr _push");
+
+    end_chunk("|| expression");
+}
+
+/**
+ * Emit assembly for a && binary expression
+ * @param node the expression node
+*/
+void emit_and_binary_expression(struct SyntaxNode *node) {
+
+}
+
 
 
 /**

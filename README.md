@@ -154,7 +154,7 @@ Steps towards Milestone 3:
         - ~~Assigning to arrays~~
         - ~~Retrieving from arrays~~
 - ~~For loops~~
-- Comparisons: `<`, `>`, `<=`, `>=`
+- ~~Comparisons: `<`, `>`, `<=`, `>=`~~
 - Logical operators: `&&`, `||`, `!` 
 - Function calling with parameters
 - char literals
