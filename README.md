@@ -155,7 +155,8 @@ Steps towards Milestone 3:
         - ~~Retrieving from arrays~~
 - ~~For loops~~
 - ~~Comparisons: `<`, `>`, `<=`, `>=`~~
-- Logical operators: `&&`, `||`, `!` 
+- ~~Binary logical operators: `&&`, `||`, with short-circuiting~~
+- ~~Unary logical operator: `!` ~~
 - Function calling with parameters
 - char literals
 - `putchar`

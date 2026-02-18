@@ -54,8 +54,10 @@ void emit_greater_equals_binary_expression(struct SyntaxNode *node);
 void emit_shift(struct SyntaxNode *node, int left);
 void emit_right_shift_binary_expression(struct SyntaxNode *node);
 void emit_left_shift_binary_expression(struct SyntaxNode *node);
-void emit_or_binary_expression(struct SyntaxNode *node);
-void emit_and_binary_expression(struct SyntaxNode *node);
+void emit_or_binary_expression(struct SyntaxNode *node, struct Label *short_circuit_label);
+void emit_and_binary_expression(struct SyntaxNode *node, struct Label *short_circuit_label);
+void emit_and_short_circuit_check(struct SyntaxNode *node, struct Label *short_circuit_label);
+void emit_or_short_circuit_check(struct SyntaxNode *node, struct Label *short_circuit_label);
 
 void emit_postfix_expression(struct SyntaxNode *node);
 void emit_increment_postfix_expression(struct SyntaxNode *node);
@@ -64,6 +66,7 @@ void emit_array_index_postfix_expression(struct SyntaxNode *node);
 
 void emit_unary_expression(struct SyntaxNode *node);
 void emit_unary_minus_expression(struct SyntaxNode *node);
+void emit_unary_not_expression(struct SyntaxNode *node);
 
 void emit_assignment_expression(struct SyntaxNode *node);
 void emit_simple_assignment_expression(struct SyntaxNode *node);

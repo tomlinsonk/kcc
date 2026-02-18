@@ -333,13 +333,24 @@ void emit_int_constant(struct SyntaxNode *node) {
  * 1) evaluate the left operand, which pushes the value onto the stack. Convert type if needed.
  * 2) evaluate the right operand, which pushes the value onto the stack. Convert type if needed.
  * 3) pop the operands off the stack and compute this expression's value
- * 4) push the value of the binary expression onto the stack
+ * 4) push the value of the binary expression onto the stack.
+ * For short-circuiting operators (&& and ||), the left operand is popped off the stack in step 1.5.
+ * If a short-circuit occurs, jump to step 4. With no short circuit, continue to step 2 as normal and step 3 only pops the right operand.
  * @param node the binary expression node
  */
 void emit_binary_expression(struct SyntaxNode *node) {
+    struct Label *short_circuit_label = new_label();
+ 
     emit_expression(node->first_child);
     if (!types_match(node->first_child->type, node->type))
         emit_type_conversion(node->first_child->type, node->type);
+
+    // handle short-circuiting for && and ||
+    if (node->token->kind == DOUBLE_AMPERSAND_TOKEN) {
+        emit_and_short_circuit_check(node, short_circuit_label);
+    } else if (node->token->kind == DOUBLE_PIPE_TOKEN) {
+        emit_or_short_circuit_check(node, short_circuit_label);
+    }
 
     emit_expression(node->last_child);
     if (!types_match(node->last_child->type, node->type))
@@ -386,10 +397,10 @@ void emit_binary_expression(struct SyntaxNode *node) {
         emit_left_shift_binary_expression(node);
         break;
     case DOUBLE_PIPE_TOKEN:
-        emit_or_binary_expression(node);
+        emit_or_binary_expression(node, short_circuit_label);
         break;
     case DOUBLE_AMPERSAND_TOKEN:
-        emit_and_binary_expression(node);
+        emit_and_binary_expression(node, short_circuit_label);
         break;
     default:
         printf(BOLD_RED "Error: can't emit binary operator %s\n" RESET, token_kind_names[node->token->kind]);
@@ -410,6 +421,9 @@ void emit_unary_expression(struct SyntaxNode *node) {
         break;
     case MINUS_TOKEN:
         emit_unary_minus_expression(node);
+        break;
+    case BANG_TOKEN:
+        emit_unary_not_expression(node);
         break;
     default:
         printf(BOLD_RED "Error: can't emit unary operator %s\n" RESET, token_kind_names[node->token->kind]);
@@ -446,6 +460,33 @@ void emit_unary_minus_expression(struct SyntaxNode *node) {
     end_chunk("unary -");
 }
 
+/**
+ * Emit assembly for a unary not expression
+ * @param node expression node
+*/
+void emit_unary_not_expression(struct SyntaxNode *node) {
+    struct Label *done_label = new_label();
+
+    start_chunk("unary !");
+    emit("stz tmp");
+    for (int i = 0; i < node->type->size; i++) {
+        emit("jsr _pop");
+        emit("ora tmp");
+        emit("sta tmp");
+    }
+    emit("ldx #1");
+    emit("lda tmp");
+    emit("beq %s", done_label->name);
+    emit("ldx #0");
+    emit_label(done_label);
+    emit("lda #0");
+    for (int i = 0; i < node->type->size - 1; i++)
+        emit("jsr _push");
+    emit("txa");
+    emit("jsr _push");
+
+    end_chunk("unary !");
+}
 
 /**
  * Emit assembly for an addition expression
@@ -684,15 +725,16 @@ void emit_left_shift_binary_expression(struct SyntaxNode *node) {
 /**
  * Emit assembly for a || binary expression
  * @param node the expression node
+ * @param short_circuit_label the label to jump to for short-circuiting
 */
-void emit_or_binary_expression(struct SyntaxNode *node) {
+void emit_or_binary_expression(struct SyntaxNode *node, struct Label *short_circuit_label) {
     struct Label *true_label = new_label();
     struct Label *done_label = new_label();
 
     start_chunk("|| expression");
     emit("stz tmp");
     emit("ldx #0");
-    for (int i = 0; i < node->type->size * 2; i++) {
+    for (int i = 0; i < node->type->size; i++) {
         emit("jsr _pop");
         emit("ora tmp");
         emit("sta tmp");
@@ -701,8 +743,9 @@ void emit_or_binary_expression(struct SyntaxNode *node) {
     emit("bne %s", true_label->name);
     emit("jmp %s", done_label->name);
 
+    emit_label(short_circuit_label);
     emit_label(true_label);
-    emit("inx");
+    emit("ldx #1");
 
     emit_label(done_label);
     emit("lda #0");
@@ -715,12 +758,90 @@ void emit_or_binary_expression(struct SyntaxNode *node) {
 }
 
 /**
+ * Emit assembly for the short-circuit check of an || expression.
+ * Evaluates the left operand and jumps to the end of the expression if it's true
+ * @param node the || binary expression node
+ * @param short_circuit_label the label to jump to if the left operand is true
+*/
+void emit_or_short_circuit_check(struct SyntaxNode *node, struct Label *short_circuit_label) {
+    struct Label *no_short_circuit_label = new_label();
+
+    start_chunk("|| short-circuit check");
+    emit("stz tmp");
+    for (int i = 0; i < node->type->size; i++) {
+        emit("jsr _pop");
+        emit("ora tmp");
+        emit("sta tmp");
+    }
+    emit("lda tmp");
+    emit("beq %s", no_short_circuit_label->name);
+    emit("jmp %s", short_circuit_label->name);
+
+    emit_label(no_short_circuit_label);
+    end_chunk("|| short-circuit check");
+}
+
+
+/**
  * Emit assembly for a && binary expression
  * @param node the expression node
 */
-void emit_and_binary_expression(struct SyntaxNode *node) {
+void emit_and_binary_expression(struct SyntaxNode *node, struct Label *short_circuit_label) {
+    struct Label *false_label = new_label();
+    struct Label *done_label = new_label();
 
+    start_chunk("&& expression");
+    emit("stz tmp");
+    emit("ldx #1");
+    for (int i = 0; i < node->type->size; i++) {
+        emit("jsr _pop");
+        emit("ora tmp");
+        emit("sta tmp");
+    }
+    emit("lda tmp");
+    emit("beq %s", false_label->name);
+    emit("jmp %s", done_label->name);
+
+    emit_label(short_circuit_label);
+    emit_label(false_label);
+    emit("ldx #0");
+
+    emit_label(done_label);
+    emit("lda #0");
+    for (int i = 0; i < node->type->size - 1; i++)
+        emit("jsr _push");
+    emit("txa");
+    emit("jsr _push");
+
+    end_chunk("&& expression");
 }
+
+
+/**
+ * Emit assembly for the short-circuit check of an && expression.
+ * Evaluates the left operand and jumps to the end of the expression if it's false
+ * @param node the && binary expression node
+ * @param short_circuit_label the label to jump to if the left operand is false
+*/
+void emit_and_short_circuit_check(struct SyntaxNode *node, struct Label *short_circuit_label) {
+    struct Label *no_short_circuit_label = new_label();
+
+    start_chunk("&& short-circuit check");
+    emit("stz tmp");
+    for (int i = 0; i < node->type->size; i++) {
+        emit("jsr _pop");
+        emit("ora tmp");
+        emit("sta tmp");
+    }
+    emit("lda tmp");
+    emit("bne %s", no_short_circuit_label->name);
+    emit("jmp %s", short_circuit_label->name);
+
+    emit_label(no_short_circuit_label);
+    end_chunk("&& short-circuit check");
+}
+
+
 
 
 

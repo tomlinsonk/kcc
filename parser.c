@@ -658,7 +658,7 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
 struct SyntaxNode *parse_unary_expression() {
     struct SyntaxNode *node;
 
-    if (cur_token->kind == PLUS_TOKEN || cur_token->kind == MINUS_TOKEN) {
+    if (cur_token->kind == PLUS_TOKEN || cur_token->kind == MINUS_TOKEN || cur_token->kind == BANG_TOKEN) {
         node = new_syntax_node(UNARY_EXPRESSION_SYNTAX, cur_token);
         cur_token = cur_token->next;
         add_syntax_child(node, parse_unary_expression());
