@@ -183,6 +183,27 @@ int is_assignment_operator(struct Token *token) {
 }
 
 /**
+ * Check if a token is a postfix operator (++, --, [, (, ., ->)
+ * @param token the token to check
+ * @return 1 if it's a postfix operator, 0 if not
+ */
+int is_postfix_operator(struct Token *token) {
+    if (token == NULL) 
+        return 0;
+
+    switch (token->kind) {
+    case PLUS_PLUS_TOKEN:
+    case MINUS_MINUS_TOKEN:
+    case OPEN_BRACKET_TOKEN:
+    case OPEN_PAREN_TOKEN:
+    // TODO: for struct support, also . and ->
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+/**
  * Check if a token represent a declaration specifier (for now, only type keyword).
  * Eventually, other declaration specifiers include static, const, extern, ... 
  */
@@ -677,20 +698,34 @@ struct SyntaxNode *parse_postfix_expression() {
     struct SyntaxNode *node = parse_primary_expression();
     struct SyntaxNode *new_node;
 
-    while (cur_token->kind == OPEN_BRACKET_TOKEN) {
-        new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
-        add_syntax_child(new_node, node);
-        node = new_node;
-        match(OPEN_BRACKET_TOKEN);
-        add_syntax_child(node, parse_expression());
-        match(CLOSE_BRACKET_TOKEN);
-    }
-
-    while (cur_token->kind == PLUS_PLUS_TOKEN || cur_token->kind == MINUS_MINUS_TOKEN) {
-        new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
-        cur_token = cur_token->next;
-        add_syntax_child(new_node, node);
-        node = new_node;
+    while (is_postfix_operator(cur_token)) {
+        switch (cur_token->kind) {
+        case OPEN_BRACKET_TOKEN:
+            new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
+            add_syntax_child(new_node, node);
+            node = new_node;
+            match(OPEN_BRACKET_TOKEN);
+            add_syntax_child(node, parse_expression());
+            match(CLOSE_BRACKET_TOKEN);
+            break;
+        case OPEN_PAREN_TOKEN:
+            new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
+            add_syntax_child(new_node, node);
+            node = new_node;
+            match(OPEN_PAREN_TOKEN);
+            // TODO: parse argument list
+            match(CLOSE_PAREN_TOKEN);
+            break;
+        case PLUS_PLUS_TOKEN:
+        case MINUS_MINUS_TOKEN:
+            new_node = new_syntax_node(POSTFIX_EXPRESSION_SYNTAX, cur_token);
+            cur_token = cur_token->next;
+            add_syntax_child(new_node, node);
+            node = new_node;
+            break;
+        default:
+            break;
+        }
     }
 
     return node;

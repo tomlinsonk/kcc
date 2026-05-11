@@ -25,7 +25,7 @@ static FILE *out;
 static int n_labels = 0;
 static struct Label *head_label = NULL;
 static struct Label *tail_label = NULL;
-
+static int local_offset = 0;
 
 
 /**
@@ -154,7 +154,7 @@ void emit_function_definition(struct SyntaxNode *node) {
 
     // Emit the function label
     emit_named_label(symbol->name);
-
+    emit("{");
     // TODO: handle arguments
 
     // set frame pointer
@@ -167,6 +167,10 @@ void emit_function_definition(struct SyntaxNode *node) {
 
     // Return from the function
     start_chunk("function cleanup");
+    emit_named_label("_return");
+
+    // restore stack pointer
+    emit("mov2 fp : sp");
 
     // pop return address off C stack and repare for rts
     emit("jsr _pop");
@@ -190,7 +194,7 @@ void emit_function_definition(struct SyntaxNode *node) {
 
     emit("rts");
     end_chunk("function cleanup");
-
+    emit("}");
 }
 
 
@@ -207,11 +211,15 @@ void emit_compound_statement(struct SyntaxNode *node) {
     if (node->first_child != NULL && node->first_child->syntax == DECLARATION_LIST_SYNTAX) {
         for (struct SyntaxNode *declaration = node->first_child->first_child; declaration != NULL; declaration = declaration->next) {
             n_local_bytes += get_memory_size(declaration->last_child->type);
-            declaration->last_child->first_child->symbol->offset = -n_local_bytes;
+            declaration->last_child->first_child->symbol->offset = -(n_local_bytes + local_offset);
         }
 
-        if (n_local_bytes > 0)
+        // Move stack pointer after locals for this compound statement
+        // Update local offset so that nested compound statements can allocate space for their locals
+        if (n_local_bytes > 0) {
             emit("add2 sp : #-%i", n_local_bytes);
+            local_offset += n_local_bytes;
+        }
     }
 
     // Emit all statements
@@ -226,6 +234,7 @@ void emit_compound_statement(struct SyntaxNode *node) {
     // Pop locals
     if (n_local_bytes > 0) {
         emit("add2 sp : #%i", n_local_bytes);
+        local_offset -= n_local_bytes;
     }
 }
 
@@ -1198,6 +1207,9 @@ void emit_postfix_expression(struct SyntaxNode *node) {
     case OPEN_BRACKET_TOKEN:
         emit_array_index_postfix_expression(node);
         break;
+    case OPEN_PAREN_TOKEN:
+        emit_function_call_postfix_expression(node);
+        break;
     default:
         printf(BOLD_RED "Error: can't emit postfix operator %s\n" RESET, token_kind_names[node->token->kind]);
         break;
@@ -1260,6 +1272,7 @@ void emit_decrement_postfix_expression(struct SyntaxNode *node) {
  * Emit assembly for an array index expression. If node is an lvalue or has array
  * type, places the address of the array item on the stack. Otherwise, places the
  * value of the array item on the stack.
+ * @param node the SyntaxNode of the array index postfix expression
 */
 void emit_array_index_postfix_expression(struct SyntaxNode *node) {
     // Push the array address on the stack
@@ -1321,9 +1334,51 @@ void emit_array_index_postfix_expression(struct SyntaxNode *node) {
     end_chunk("array index expression");
 }
 
+/**
+ * Emit assembly for a function call postfix expression
+ * @param node the SyntaxNode of the function call postfix expression
+ */
+void emit_function_call_postfix_expression(struct SyntaxNode *node) {
+    struct Label *return_label = new_label();
+    start_chunk("function call");
+
+    // TODO: push the arguments onto the stack
+
+    // Push the frame pointer onto the stack
+    emit("lda fp+1");
+    emit("jsr _push");
+    emit("lda fp");
+    emit("jsr _push");
+
+    // Push the return address onto the stack
+    emit("lda #(<(%s-1))", return_label->name);
+    emit("jsr _push");
+    emit("lda #(>(%s-1))", return_label->name);
+    emit("jsr _push");
+    
+    // Jump to the function
+    emit("jmp %s", node->first_child->symbol->name);
+
+    emit_label(return_label);
+
+    // TODO: pop the arguments off the stack
+
+    // Push the return value onto the stack
+    if (node->type->size == 2) {
+        emit("lda ret+1");
+        emit("jsr _push");
+    }
+    emit("lda ret");
+    emit("jsr _push");
+
+    end_chunk("function call");
+}
+
 
 /**
- * Emit assembly for a return statement 
+ * Emit assembly for a return statement.
+ * If the return statement has an expression, evaluates it and pushes the value onto the stack.
+ * Stores the return value in ret and jumps to the return label of the function.
  * @param node the return statement node
  */
 void emit_return_statement(struct SyntaxNode *node) {
@@ -1342,6 +1397,8 @@ void emit_return_statement(struct SyntaxNode *node) {
             emit("jsr _pop");
             emit("sta ret+1");
         }
+
+        emit("jmp _return");
 
         end_chunk("return");
     }

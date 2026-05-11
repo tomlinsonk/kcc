@@ -157,7 +157,8 @@ Steps towards Milestone 3:
 - ~~Comparisons: `<`, `>`, `<=`, `>=`~~
 - ~~Binary logical operators: `&&`, `||`, with short-circuiting~~
 - ~~Unary logical operator: `!` ~~
-- Function calling with parameters
+- Function calling
+- Function parameters
 - char literals
 - `putchar`
 
@@ -210,8 +211,8 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 ## Supported features
 - `int` and `char` types
 - Assignment expressions (using `=`)
-- Binary operators: `+`, `-`, `==`, `!=`, `>>`, `<<`, `*`, `/`, `%`
-- Unary operators: `+`, `-`
+- Binary operators: `+`, `-`, `==`, `!=`, `>>`, `<<`, `*`, `/`, `%`, `>`, `<`, `<=`, `>=`, `&&`, `||` 
+- Unary operators: `+`, `-`, `!`,
 - Postfix operators: `++`, `--`
 - Return statement
 - While loops
@@ -221,8 +222,8 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 
 ## Todo
 - Functions: parameters, function calling
-- Binary operators: `>`, `<`, `<=`, `^`, `|`, `&`, `&&`, `||` 
-- Unary operators: `*`, `~`, `!`, `++`, `--`
+- Binary operators:  `^`, `|`, `&`, 
+- Unary operators: `*`, `~`, `++`, `--`
 - Assigment operators `*=`, `+=`, `-=`, `/=`, `%=`, `<<=`, `>>=`, `&=`, `|=`, `^=`
 - Do-while loops
 - Switch statements

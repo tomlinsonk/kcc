@@ -40,6 +40,7 @@ void print_type(struct Type *type) {
         print_type(type->to_type);
         break;
      case FUNCTION_TYPE:
+        // TODO: also print parameter types
         printf("function returning ");
         print_type(type->return_type);
         break;
@@ -68,6 +69,7 @@ int types_match(struct Type *t1, struct Type *t2) {
     case POINTER_TYPE:
         return types_match(t1->to_type, t2->to_type);
     case FUNCTION_TYPE:
+        // TODO: also check parameter types
         return types_match(t1->return_type, t2->return_type);
     }
 }

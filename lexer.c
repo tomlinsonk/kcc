@@ -119,6 +119,14 @@ struct Token *lex(char input[]) {
         if (input[i] == '\0')
             break;
 
+        /* consume commented lines */
+        if (input[i] == '/' && input[i+1] == '/') {
+            i += 2;
+            while (input[i] != '\n' && input[i] != '\0')
+                i++;
+            continue;
+        }
+
         new_token = malloc(sizeof(struct Token));
         new_token->index = i;
         new_token->next = tail;

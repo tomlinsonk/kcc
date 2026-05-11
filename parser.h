@@ -82,7 +82,7 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
 void free_tree(struct SyntaxNode *root);
 
 int is_assignment_operator(struct Token *token);
-
+int is_postfix_operator(struct Token *token);
 int is_declaration_specifier(struct Token *token);
 
 struct SyntaxNode *parse(struct Token *head, char input_seq[]);

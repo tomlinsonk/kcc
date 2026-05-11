@@ -329,6 +329,21 @@ void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *s
             num_semantic_errors++;
         }
         break;
+    case OPEN_PAREN_TOKEN:
+        if (root->first_child->type->kind == FUNCTION_TYPE) {
+            root->type = root->first_child->type->return_type;
+            // TODO: check argument types
+        } else {
+            root->type = &ERROR_TYPE;
+            
+            printf(BOLD_RED "Error: postfix operator ( ) is not applicable to type ");
+            print_type(root->first_child->type);
+            printf("\n" RESET);
+
+            num_semantic_errors++;
+        }
+
+        break;
     default:
         printf(BOLD_RED "Warning: no typechecking support for postfix operator %s \n" RESET, token_kind_names[root->token->kind]);
         break;

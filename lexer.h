@@ -11,6 +11,7 @@
 #include <stdio.h>
 
 static const char *token_kind_names[] = {
+    "//",
     "INT", "STRING", 
     "+", "-", "*", "/", "%", "++", "--",
     "~", "|", "&", "^", ">>", "<<",
@@ -23,6 +24,9 @@ static const char *token_kind_names[] = {
 };
 
 enum TokenKind { 
+    // Comments
+    COMMENT_TOKEN,
+    
     // Literals
     INT_CONSTANT_TOKEN,
     STRING_TOKEN,
