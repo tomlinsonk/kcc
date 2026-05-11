@@ -157,7 +157,7 @@ Steps towards Milestone 3:
 - ~~Comparisons: `<`, `>`, `<=`, `>=`~~
 - ~~Binary logical operators: `&&`, `||`, with short-circuiting~~
 - ~~Unary logical operator: `!` ~~
-- Function calling
+- ~~Function calling~~
 - Function parameters
 - char literals
 - `putchar`
