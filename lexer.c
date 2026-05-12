@@ -279,7 +279,7 @@ struct Token *lex(char input[]) {
                 }
             }
             i += new_token->length;
-        } else if (strchr("(){}[];", input[i]) != NULL) {
+        } else if (strchr("(){}[];,", input[i]) != NULL) {
             /* Check for syntax tokens */
             new_token->length = 1;
 
@@ -304,6 +304,9 @@ struct Token *lex(char input[]) {
                 break;
             case ';':
                 new_token->kind = SEMICOLON_TOKEN;
+                break;
+            case ',':
+                new_token->kind = COMMA_TOKEN;
                 break;
             }
             i++;

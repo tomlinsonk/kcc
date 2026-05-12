@@ -742,7 +742,11 @@ struct SyntaxNode *parse_postfix_expression() {
             add_syntax_child(new_node, node);
             node = new_node;
             match(OPEN_PAREN_TOKEN);
-            // TODO: parse argument list
+            while (cur_token->kind != CLOSE_PAREN_TOKEN) {
+                add_syntax_child(node, parse_expression());
+                if (cur_token->kind != CLOSE_PAREN_TOKEN)
+                    match(COMMA_TOKEN);
+            }
             match(CLOSE_PAREN_TOKEN);
             break;
         case PLUS_PLUS_TOKEN:
