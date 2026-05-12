@@ -18,7 +18,7 @@ static const char *token_kind_names[] = {
     "!", "||", "&&",
     "==", "!=", ">", "<", ">=", "<=",
     "=", "*=", "/=", "%=", "+=", "-=", ">>=", "<<=", "&=", "^=", "|=",
-    "(", ")", "{", "}", "[", "]", ";", 
+    "(", ")", "{", "}", "[", "]", ";", ",",
     "IDENTIFIER", "INT_KEYWORD", "CHAR_KEYWORD", "ASM_KEYWORD", "IF_KEYWORD", "ELSE_KEYWORD", "WHILE_KEYWORD", "FOR_KEYWORD", "RETURN_KEYWORD",  
     "START", "END", "UNKNOWN"
 };
@@ -82,7 +82,8 @@ enum TokenKind {
     OPEN_BRACKET_TOKEN,
     CLOSE_BRACKET_TOKEN,
     SEMICOLON_TOKEN,
-
+    COMMA_TOKEN,
+    
     // Identifiers and keywords
     IDENTIFIER_TOKEN,
     INT_KEYWORD_TOKEN,

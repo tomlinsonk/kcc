@@ -362,7 +362,8 @@ struct SyntaxNode *parse_function_definition() {
     add_syntax_child(node, parse_direct_declarator());
 
     match(OPEN_PAREN_TOKEN);
-    // add_syntax_child(node, parse_parameter_list()); // TODO: parse parameter list
+    if (cur_token->kind != CLOSE_PAREN_TOKEN)
+        add_syntax_child(node, parse_parameter_list()); 
     match(CLOSE_PAREN_TOKEN);
 
     add_syntax_child(node, parse_compound_statement());
@@ -370,6 +371,34 @@ struct SyntaxNode *parse_function_definition() {
     return node;
 }
 
+
+/**
+ * Parse the parameter list of a function of the form [parameter declaration] [, [parameter declaration]]*
+ * @return a pointer to the parameter list node
+ */
+struct SyntaxNode *parse_parameter_list() {
+    struct SyntaxNode *node = new_syntax_node(PARAMETER_LIST_SYNTAX, NULL);
+
+    while (cur_token != NULL && cur_token->kind != CLOSE_PAREN_TOKEN) {
+        add_syntax_child(node, parse_parameter_declaration());
+        if (cur_token->kind != CLOSE_PAREN_TOKEN)
+            match(COMMA_TOKEN);
+    }
+
+    return node;
+}
+
+/**
+ * Parse a parameter declaration of the form [declaration specifier] [declarator]
+ */
+struct SyntaxNode *parse_parameter_declaration() {
+    struct SyntaxNode *node = new_syntax_node(PARAMETER_DECLARATION_SYNTAX, NULL);
+
+    add_syntax_child(node, parse_declaration_specifier());
+    add_syntax_child(node, parse_direct_declarator());
+
+    return node;
+}
 
 /**
  * Parse a compound statement of the form {[declaration list] [statement list]}

@@ -19,7 +19,7 @@ static const char *syntax_names[] = {
     "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ASSIGNMENT_EXPRESSION", "POSTFIX_EXPRESSION", "NOP_EXPRESSION",
     "IF_STATEMENT", "IF_ELSE_STATEMENT", "WHILE_STATEMENT", "FOR_STATEMENT", "RETURN_STATEMENT", "EXPRESSION_STATEMENT", "COMPOUND_STATEMENT", "STATEMENT_LIST", 
     "DECLARATOR", "ARRAY_DECLARATOR", "DECLARATION_SPECIFIER", "DECLARATION", "DECLARATION_LIST",
-    "FUNCTION_DEFINITION", "PARAMETER_LIST",
+    "FUNCTION_DEFINITION", "PARAMETER_LIST", "PARAMETER_DECLARATION",
     "TRANSLATION_UNIT",
     "ERROR"
 };
@@ -56,6 +56,7 @@ enum SyntaxKind {
 
     FUNCTION_DEFINITION_SYNTAX,
     PARAMETER_LIST_SYNTAX,
+    PARAMETER_DECLARATION_SYNTAX,
 
     TRANSLATION_UNIT_SYNTAX,
 
@@ -91,6 +92,8 @@ struct SyntaxNode *parse(struct Token *head, char input_seq[]);
 struct SyntaxNode *parse_translation_unit();
 
 struct SyntaxNode *parse_function_definition(); 
+struct SyntaxNode *parse_parameter_list();
+struct SyntaxNode *parse_parameter_declaration();
 
 struct SyntaxNode *parse_declaration_list();
 struct SyntaxNode *parse_declaration();

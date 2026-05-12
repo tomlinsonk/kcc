@@ -851,9 +851,6 @@ void emit_and_short_circuit_check(struct SyntaxNode *node, struct Label *short_c
 }
 
 
-
-
-
 /**
  * Emit assembly for an == comparison expression
  * @param node the syntax node of the expreesion
