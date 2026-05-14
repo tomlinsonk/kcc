@@ -214,6 +214,7 @@ int is_declaration_specifier(struct Token *token) {
     switch (token->kind) {
     case INT_KEYWORD_TOKEN:
     case CHAR_KEYWORD_TOKEN:
+    case VOID_KEYWORD_TOKEN:
         return 1;
     default:    
         return 0;

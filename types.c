@@ -40,8 +40,16 @@ void print_type(struct Type *type) {
         print_type(type->to_type);
         break;
      case FUNCTION_TYPE:
-        // TODO: also print parameter types
-        printf("function returning ");
+        printf("function(");
+        struct Type *param_type = type->param_type;
+        while (param_type != NULL) {
+            print_type(param_type);
+            if (param_type->next != NULL)
+                printf(", ");
+            param_type = param_type->next;
+        }
+            
+        printf(") returning ");
         print_type(type->return_type);
         break;
     default:
@@ -61,6 +69,10 @@ int types_match(struct Type *t1, struct Type *t2) {
     else if (t1 == NULL || t2 == NULL || t1->kind != t2->kind)
         return 0;
 
+    int params_match;
+    struct Type *param1;
+    struct Type *param2;
+
     switch (t1->kind) {
     case PRIMITIVE_TYPE:
         return t1->primitive == t2->primitive;
@@ -69,8 +81,23 @@ int types_match(struct Type *t1, struct Type *t2) {
     case POINTER_TYPE:
         return types_match(t1->to_type, t2->to_type);
     case FUNCTION_TYPE:
-        // TODO: also check parameter types
-        return types_match(t1->return_type, t2->return_type);
+        params_match = 1;
+        param1 = t1->param_type;
+        param2 = t2->param_type;
+
+        if ((param1 == NULL) != (param2 == NULL))
+            return 0;
+
+        while (param1 != NULL && param2 != NULL) {
+            if (!types_match(param1, param2)) {
+                params_match = 0;
+                break;
+            }
+            param1 = param1->next;
+            param2 = param2->next;
+        }
+
+        return params_match && types_match(t1->return_type, t2->return_type);
     }
 }
 
@@ -94,7 +121,43 @@ struct Type *new_type(enum TypeKind kind) {
     type->kind = kind;
 
     return type;
-} 
+}
+
+
+/**
+ * Make a copy of a given type
+ * @param type the type to copy
+ * @return a pointer to the new type
+ */
+struct Type *copy_type(struct Type *type) {
+    if (type == NULL)
+        return NULL;
+
+    struct Type *type_copy = new_type(type->kind);
+
+    switch (type->kind) {
+    case PRIMITIVE_TYPE:
+        type_copy->primitive = type->primitive;
+        break;
+    case ARRAY_TYPE:
+        type_copy->of_type = copy_type(type->of_type);
+        type_copy->size = type->size;
+        break;
+    case POINTER_TYPE:
+        type_copy->to_type = copy_type(type->to_type);
+        break;
+    case FUNCTION_TYPE:
+        type_copy->return_type = copy_type(type->return_type);
+        type_copy->param_type = copy_type(type->param_type);
+        break;
+    }
+
+    // for params in function types, copy the linked list of parameters
+    if (type->next != NULL)
+        type_copy->next = copy_type(type->next);
+
+    return type_copy;
+}
 
 
 /**

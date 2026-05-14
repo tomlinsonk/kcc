@@ -62,6 +62,8 @@ enum TokenKind get_identifier_kind(char input[], int start, int length) {
         return INT_KEYWORD_TOKEN;
     if (length == 4 && strncmp(input + start, "char", length) == 0)
         return CHAR_KEYWORD_TOKEN;
+    if (length == 4 && strncmp(input + start, "void", length) == 0)
+        return VOID_KEYWORD_TOKEN;
     if (length == 3 && strncmp(input + start, "asm", length) == 0)
         return ASM_KEYWORD_TOKEN;
     if (length == 2 && strncmp(input + start, "if", length) == 0)

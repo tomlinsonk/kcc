@@ -73,6 +73,8 @@ struct Type *get_declaration_type(struct SyntaxNode *specifier_node, struct Synt
                 return &INT_TYPE;    
             case CHAR_KEYWORD_TOKEN:
                 return &CHAR_TYPE;
+            case VOID_KEYWORD_TOKEN:
+                return &VOID_TYPE;
             default:
                 break;
             }
@@ -195,6 +197,9 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         break;
     case FUNCTION_DEFINITION_SYNTAX:
         bind_function_definition(root, symbol_table);
+        // function scope for params
+        symbol_table = new_subtable(symbol_table);
+        bind_function_parameters(root, symbol_table);
         typecheck(root->last_child, symbol_table);
         break;
     case COMPOUND_STATEMENT_SYNTAX:
@@ -332,7 +337,7 @@ void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *s
     case OPEN_PAREN_TOKEN:
         if (root->first_child->type->kind == FUNCTION_TYPE) {
             root->type = root->first_child->type->return_type;
-            // TODO: check argument types
+            typecheck_arguments(root->first_child->next, root->first_child->type->param_type, symbol_table);
         } else {
             root->type = &ERROR_TYPE;
             
@@ -347,9 +352,44 @@ void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *s
     default:
         printf(BOLD_RED "Warning: no typechecking support for postfix operator %s \n" RESET, token_kind_names[root->token->kind]);
         break;
+    }   
+}
+
+
+/** 
+ * Typecheck the arguments of a function call
+ * @param argument_node the first argument node (the first child of the postfix expression node)
+ * @param param_type the type of the first parameter (the param_type field of the function type)
+ * @param symbol_table a pointer to the current scope's symbol table
+ */
+void typecheck_arguments(struct SyntaxNode *argument_node, struct Type *param_type, struct SymbolTable *symbol_table) {
+    while (argument_node != NULL) {
+        typecheck(argument_node, symbol_table);
+
+        if (param_type == NULL) {
+            printf(BOLD_RED "Error: too many arguments in function call\n" RESET);
+            num_semantic_errors++;
+            return;
+        }
+
+        if (!types_match(argument_node->type, param_type) && !can_autoconvert(argument_node->type, param_type)) {
+            printf(BOLD_RED "Error: argument type ");
+            print_type(argument_node->type);
+            printf(" does not match parameter type ");
+            print_type(param_type);
+            printf("\n" RESET);
+            num_semantic_errors++;
+        }
+
+        argument_node = argument_node->next;
+        param_type = param_type->next;
     }
 
-    
+    if (param_type != NULL) {
+        printf(BOLD_RED "Error: too few arguments in function call\n" RESET);
+        num_semantic_errors++;
+    }
+
 }
 
 /**
@@ -406,7 +446,7 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
     char *name = copy_identifier_name(declarator_node->first_child);
     struct Symbol *symbol;
 
-    if (type != &ERROR_TYPE && name != NULL) {
+    if (type != &ERROR_TYPE && type != &VOID_TYPE && name != NULL) {
         // Use get_symbol_in_table rather than get_symbol to allow shadowing
         if (get_symbol_in_table(symbol_table, name) == NULL) {
             symbol = new_symbol(name, type);
@@ -461,9 +501,26 @@ void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbo
 
     struct Type *type = new_type(FUNCTION_TYPE);
     type->return_type = get_declaration_type(node->first_child, node->last_child);
-    node->type = type;
 
-    // TODO: process parameter list, add to parameter type list
+    // process parameter list, add to parameter type list
+    if (node->first_child->next->next->syntax == PARAMETER_LIST_SYNTAX) {
+        struct SyntaxNode *param_node = node->first_child->next->next->first_child;
+        struct Type *cur_param_type = NULL;
+        
+        struct Type *param_type = get_declaration_type(param_node->first_child, param_node->last_child);
+        type->param_type = copy_type(param_type);
+        cur_param_type = type->param_type;
+        param_node = param_node->next;
+
+        while (param_node != NULL) {
+            param_type = get_declaration_type(param_node->first_child, param_node->last_child);
+            cur_param_type->next = copy_type(param_type);
+            cur_param_type = cur_param_type->next;
+            param_node = param_node->next;
+        }
+    }
+
+    node->type = type;
 
     if (type->return_type != &ERROR_TYPE && name != NULL) {
         if (get_symbol_in_table(symbol_table, name) == NULL) {
@@ -479,5 +536,21 @@ void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbo
         printf(BOLD_RED "Error: cannot declare function with return type ");
         print_type(type->return_type);
         printf(" named %s\n" RESET, name);
+    }
+}
+
+/**
+ * Bind function parameter declarations
+ * @param function_node the syntax node of the function
+ * @param symbol_table the current symbol table (function's scope)
+ */
+void bind_function_parameters(struct SyntaxNode *function_node, struct SymbolTable *symbol_table) {
+    if (function_node->first_child->next->next->syntax == PARAMETER_LIST_SYNTAX) {
+        struct SyntaxNode *param_node = function_node->first_child->next->next->first_child;
+
+        while (param_node != NULL) {
+            bind_declaration(param_node->first_child, param_node->last_child, symbol_table);
+            param_node = param_node->next;
+        }
     }
 }

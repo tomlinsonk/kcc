@@ -33,7 +33,8 @@ struct Type {
         struct Type *of_type;
         struct Type *return_type;
     };
-    struct Type *next_param_type;
+    struct Type *param_type; // for function types, the type of the next parameter; null if no parameters
+    struct Type *next; // for linked list of parameters in function types; null if no next parameter
     int size;
 };
 
@@ -50,6 +51,7 @@ static struct Type MAIN_FUNCTION_TYPE = {.kind=FUNCTION_TYPE, .return_type=&INT_
 void print_type(struct Type *type);
 
 struct Type *new_type(enum TypeKind kind);
+struct Type *copy_type(struct Type *type);
 int types_match(struct Type *t1, struct Type *t2);
 int can_autoconvert(struct Type *from_type, struct Type *to_type);
 struct Type *get_binary_expression_type(struct Type *t1, struct Type *t2);
