@@ -224,9 +224,10 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 - For loops
 - If and else-if
 - Arrays
+- Functions: parameters, function calling
+
 
 ## Todo
-- Functions: parameters, function calling
 - Binary operators:  `^`, `|`, `&`, 
 - Unary operators: `*`, `~`, `++`, `--`
 - Assigment operators `*=`, `+=`, `-=`, `/=`, `%=`, `<<=`, `>>=`, `&=`, `|=`, `^=`
