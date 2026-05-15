@@ -35,6 +35,7 @@ struct Type {
     };
     struct Type *param_type; // for function types, the type of the next parameter; null if no parameters
     struct Type *next; // for linked list of parameters in function types; null if no next parameter
+    int param_bytes; // for function types, the number of bytes of parameters
     int size;
 };
 

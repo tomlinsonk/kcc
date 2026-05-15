@@ -201,6 +201,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         symbol_table = new_subtable(symbol_table);
         bind_function_parameters(root, symbol_table);
         typecheck(root->last_child, symbol_table);
+        compute_param_bytes(root);
         break;
     case COMPOUND_STATEMENT_SYNTAX:
         // Create a new scope!
@@ -553,4 +554,30 @@ void bind_function_parameters(struct SyntaxNode *function_node, struct SymbolTab
             param_node = param_node->next;
         }
     }
+}
+
+
+/**
+ * Count the number of bytes of parameters for a function and store in the function type's param_bytes field
+ * @param function_node the syntax node of the function
+ */
+void compute_param_bytes(struct SyntaxNode *function_node) {
+    int n_param_bytes = 0;
+    printf("Computing parameter bytes for function %s\n", function_node->symbol->name);
+
+    if (function_node->type->param_type != NULL) {
+        struct Type *param_type = function_node->type->param_type;
+        
+        printf("Function has parameters, computing bytes...\n");
+
+        while (param_type != NULL) {
+            printf("Parameter type: ");
+            print_type(param_type);
+            n_param_bytes += get_memory_size(param_type);
+            param_type = param_type->next;
+        }
+    }
+
+    printf("Function param_bytes: %i\n", n_param_bytes);
+    function_node->type->param_bytes = n_param_bytes;
 }

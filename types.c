@@ -134,6 +134,7 @@ struct Type *copy_type(struct Type *type) {
         return NULL;
 
     struct Type *type_copy = new_type(type->kind);
+    type_copy->size = type->size;
 
     switch (type->kind) {
     case PRIMITIVE_TYPE:
@@ -141,7 +142,6 @@ struct Type *copy_type(struct Type *type) {
         break;
     case ARRAY_TYPE:
         type_copy->of_type = copy_type(type->of_type);
-        type_copy->size = type->size;
         break;
     case POINTER_TYPE:
         type_copy->to_type = copy_type(type->to_type);

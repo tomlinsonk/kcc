@@ -158,12 +158,12 @@ Steps towards Milestone 3:
 - ~~Binary logical operators: `&&`, `||`, with short-circuiting~~
 - ~~Unary logical operator: `!` ~~
 - ~~Function calling~~
-- Function parameters
+- ~~Function parameters~~
     - ~~lexing & parsing parameter declarations and function calls with arguments~~
     - ~~types support for parameters~~
-    - binding parameter symbols
-    - typechecking parameters
-    - emitting function calls with parameters
+    - ~~binding parameter symbols~~
+    - ~~typechecking parameters~~
+    - ~~emitting function calls with parameters~~
 - char literals
 - `putchar`
 

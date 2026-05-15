@@ -149,14 +149,23 @@ void emit_translation_unit(struct SyntaxNode *root) {
 void emit_function_definition(struct SyntaxNode *node) {
     struct Symbol *symbol = node->symbol;
     struct SyntaxNode *body = node->last_child;
-    
+
+    // Compute parameter offsets
+    if (node->first_child->next->next->syntax == PARAMETER_LIST_SYNTAX) {
+        int offset = 4 + node->type->param_bytes; // 4 bytes for return address and old frame pointer
+        struct SyntaxNode *param_node = node->first_child->next->next->first_child;
+        while (param_node != NULL) {
+            offset -= get_memory_size(param_node->last_child->type);
+            param_node->last_child->first_child->symbol->offset = offset;
+            param_node = param_node->next;
+        }
+    }
+
     start_chunk("function setup");
 
     // Emit the function label
     emit_named_label(symbol->name);
     emit("{");
-    // TODO: handle arguments
-
     // set frame pointer
     emit("mov2 sp : fp");
 
@@ -1339,7 +1348,19 @@ void emit_function_call_postfix_expression(struct SyntaxNode *node) {
     struct Label *return_label = new_label();
     start_chunk("function call");
 
-    // TODO: push the arguments onto the stack
+    // Evaluate and push the arguments onto the stack
+    if (node->first_child->next != NULL) {
+        struct SyntaxNode *arg = node->first_child->next;
+        struct Type *param_type = node->first_child->symbol->type->param_type;
+        while (arg != NULL) {
+            emit_expression(arg);
+            if (!types_match(arg->type, param_type))
+                emit_type_conversion(arg->type, param_type);
+
+            arg = arg->next;
+            param_type = param_type->next;
+        }
+    }
 
     // Push the frame pointer onto the stack
     emit("lda fp+1");
@@ -1356,9 +1377,11 @@ void emit_function_call_postfix_expression(struct SyntaxNode *node) {
     // Jump to the function
     emit("jmp %s", node->first_child->symbol->name);
 
+    // Re-entry point from function call
     emit_label(return_label);
 
-    // TODO: pop the arguments off the stack
+    // Pop the arguments off the stack
+    emit("add2 sp : #%i", node->first_child->symbol->type->param_bytes); 
 
     // Push the return value onto the stack
     if (node->type->size == 2) {
