@@ -61,6 +61,9 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     case INT_CONSTANT_SYNTAX:
         printf(" %i", root->token->int_value);
         break;
+    case CHAR_CONSTANT_SYNTAX:
+        printf(" '%c'", root->token->char_value);
+        break;
     case BINARY_EXPRESSION_SYNTAX:
     case UNARY_EXPRESSION_SYNTAX:
     case ASSIGNMENT_EXPRESSION_SYNTAX:
@@ -248,6 +251,8 @@ enum SyntaxKind get_primary_expression_kind(struct Token *token) {
         return PARENTHESIZED_EXPRESSION_SYNTAX;
     case INT_CONSTANT_TOKEN:
         return INT_CONSTANT_SYNTAX;
+    case CHAR_CONSTANT_TOKEN:
+        return CHAR_CONSTANT_SYNTAX;
     case STRING_TOKEN:
         return STRING_SYNTAX;
     case IDENTIFIER_TOKEN:
@@ -360,7 +365,7 @@ struct SyntaxNode *parse_function_definition() {
     struct SyntaxNode *node = new_syntax_node(FUNCTION_DEFINITION_SYNTAX, NULL);
     
     add_syntax_child(node, parse_declaration_specifier());
-    add_syntax_child(node, parse_direct_declarator());
+    add_syntax_child(node, parse_declarator());
 
     match(OPEN_PAREN_TOKEN);
     if (cur_token->kind != CLOSE_PAREN_TOKEN)
@@ -396,7 +401,7 @@ struct SyntaxNode *parse_parameter_declaration() {
     struct SyntaxNode *node = new_syntax_node(PARAMETER_DECLARATION_SYNTAX, NULL);
 
     add_syntax_child(node, parse_declaration_specifier());
-    add_syntax_child(node, parse_direct_declarator());
+    add_syntax_child(node, parse_declarator());
 
     return node;
 }
@@ -445,7 +450,7 @@ struct SyntaxNode *parse_declaration() {
     struct SyntaxNode *node = new_syntax_node(DECLARATION_SYNTAX, NULL);
 
     add_syntax_child(node, parse_declaration_specifier());
-    add_syntax_child(node, parse_direct_declarator());
+    add_syntax_child(node, parse_declarator());
     match(SEMICOLON_TOKEN);
 
     return node;
@@ -471,6 +476,25 @@ struct SyntaxNode *parse_declaration_specifier() {
 
     return node;
 }
+
+/**
+ * Parse a declarator of the form [pointer(s)] direct_declarator
+ * @return a pointer to the declarator node
+ */
+struct SyntaxNode *parse_declarator() {
+    struct SyntaxNode *node;
+
+    if (cur_token->kind == STAR_TOKEN) {
+        node = new_syntax_node(POINTER_DECLARATOR_SYNTAX, cur_token);
+        match(STAR_TOKEN);
+        add_syntax_child(node, parse_declarator());
+    } else {
+        node = parse_direct_declarator();
+    }
+
+    return node;
+}
+
 
 /**
  * Parse a direct declarator (i.e., not pointer)
@@ -709,7 +733,7 @@ struct SyntaxNode *parse_binary_expression(int parent_priority) {
 struct SyntaxNode *parse_unary_expression() {
     struct SyntaxNode *node;
 
-    if (cur_token->kind == PLUS_TOKEN || cur_token->kind == MINUS_TOKEN || cur_token->kind == BANG_TOKEN) {
+    if (cur_token->kind == PLUS_TOKEN || cur_token->kind == MINUS_TOKEN || cur_token->kind == BANG_TOKEN || cur_token->kind == STAR_TOKEN || cur_token->kind == AMPERSAND_TOKEN) {
         node = new_syntax_node(UNARY_EXPRESSION_SYNTAX, cur_token);
         cur_token = cur_token->next;
         add_syntax_child(node, parse_unary_expression());

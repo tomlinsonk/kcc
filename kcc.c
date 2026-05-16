@@ -48,6 +48,7 @@ int main() {
     root = parse(head, input);
 
     symbol_table = new_symbol_table();
+    register_builtins(symbol_table);
 
     printf("\n---- PARSE TREE ----\n");
     pretty_print(root);

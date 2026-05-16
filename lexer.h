@@ -12,7 +12,7 @@
 
 static const char *token_kind_names[] = {
     "//",
-    "INT", "STRING", 
+    "INT", "CHAR", "STRING", 
     "+", "-", "*", "/", "%", "++", "--",
     "~", "|", "&", "^", ">>", "<<",
     "!", "||", "&&",
@@ -29,6 +29,7 @@ enum TokenKind {
     
     // Literals
     INT_CONSTANT_TOKEN,
+    CHAR_CONSTANT_TOKEN,
     STRING_TOKEN,
 
     // Arithmetic operators
@@ -108,6 +109,7 @@ struct Token {
     int length;
     union {
         int int_value;
+        char char_value;
         char *string_value;
     };
     struct Token *next;

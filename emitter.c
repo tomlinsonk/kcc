@@ -288,7 +288,8 @@ void emit_statement(struct SyntaxNode *node) {
 void emit_expression_statement(struct SyntaxNode *node) {
     if (node->first_child != NULL) {
         emit_expression(node->first_child);
-        emit("add2 sp : #%i", node->first_child->type->size);
+        if (node->first_child->type->size > 0)
+            emit("add2 sp : #%i", node->first_child->type->size);
     }
 }
 
@@ -322,6 +323,9 @@ void emit_expression(struct SyntaxNode *node) {
     case INT_CONSTANT_SYNTAX:
         emit_int_constant(node);
         break;
+    case CHAR_CONSTANT_SYNTAX:
+        emit_char_constant(node);
+        break;
     default:
         printf(BOLD_RED "Error: can't emit expression kind %s\n" RESET, syntax_names[node->syntax]);
         break;
@@ -343,6 +347,17 @@ void emit_int_constant(struct SyntaxNode *node) {
     emit("lda #<%i", node->token->int_value);
     emit("jsr _push");
     end_chunk("int constant");
+}
+
+
+/**
+ * Emit assembly for a char constant. Pushes the ASCII byte to the stack.
+ */
+void emit_char_constant(struct SyntaxNode *node) {
+    start_chunk("char constant");
+    emit("lda #%i", node->token->char_value);
+    emit("jsr _push");
+    end_chunk("char constant");
 }
 
 

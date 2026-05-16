@@ -104,23 +104,26 @@ Steps towards Milestone 2.5:
     - ~~16 bit signed~~
 4. ~~Modulus~~
 
+
 #### Milestone 3: Sorting
 Time to go big! I want to compile insertion sort:
 ```C
+void print_arr(int *arr, int n) {
+    int i;
 
-void print_arr(int arr[], int n) {
-    for (int i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         putchar('0' + i);
         putchar(' ');
     }
-    putchar('\n')
+    putchar('\n');
 }
 
-void insertion_sort(int arr[], int n) {
+void insertion_sort(int *arr, int n) {
     int tmp;
     int j;
+    int i;
 
-    for (int i = 1; i < n; i++) {
+    for (i = 1; i < n; i++) {
         j = i;
         while (j > 0 && arr[j-1] > arr[j]) {
             tmp = arr[j];
@@ -134,10 +137,11 @@ void insertion_sort(int arr[], int n) {
 int main() {
     int arr[10];
     int n;
+    int i;
 
     n = 10;
 
-    for (int i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         arr[i] = (7 * i) % 10;
     }
 
@@ -164,9 +168,13 @@ Steps towards Milestone 3:
     - ~~binding parameter symbols~~
     - ~~typechecking parameters~~
     - ~~emitting function calls with parameters~~
-- char literals
-- `putchar`
-
+- ~~char literals~~
+- ~~`putchar`~~
+- pointers
+    - ~~parsing pointers (declarators and operators)~~
+    - pointer type support
+    - emitting pointers
+    - & and * operators
 
 ## Design details
 Recall, the 6502 is little-endian (lower order bytes in smaller address)
@@ -241,4 +249,5 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 - Unions
 - Floats
 - Strings
+- Header files
 

@@ -182,6 +182,9 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case INT_CONSTANT_SYNTAX:
         root->type = &INT_TYPE;
         break;
+    case CHAR_CONSTANT_SYNTAX:
+        root->type = &CHAR_TYPE;
+        break;
     case STRING_SYNTAX:
         root->type = &CHAR_ARRAY_TYPE;
         break;
@@ -563,21 +566,29 @@ void bind_function_parameters(struct SyntaxNode *function_node, struct SymbolTab
  */
 void compute_param_bytes(struct SyntaxNode *function_node) {
     int n_param_bytes = 0;
-    printf("Computing parameter bytes for function %s\n", function_node->symbol->name);
 
     if (function_node->type->param_type != NULL) {
         struct Type *param_type = function_node->type->param_type;
         
-        printf("Function has parameters, computing bytes...\n");
-
         while (param_type != NULL) {
-            printf("Parameter type: ");
-            print_type(param_type);
             n_param_bytes += get_memory_size(param_type);
             param_type = param_type->next;
         }
     }
 
-    printf("Function param_bytes: %i\n", n_param_bytes);
     function_node->type->param_bytes = n_param_bytes;
+}
+
+/**
+ * Add builtin functions to the symbol table
+ * @param symbol_table the root symbol table
+ */
+void register_builtins(struct SymbolTable *symbol_table) {
+    // putchar(char c)
+    struct Type *putchar_type = new_type(FUNCTION_TYPE);
+    putchar_type->return_type = &VOID_TYPE;
+    putchar_type->param_type = new_type(PRIMITIVE_TYPE);
+    putchar_type->param_type->primitive = CHAR_PRIMITIVE;
+    struct Symbol *putchar_symbol = new_symbol(strdup("putchar"), putchar_type);
+    add_symbol(symbol_table, putchar_symbol);
 }

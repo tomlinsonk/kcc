@@ -80,6 +80,9 @@ Create an emulator breakpoint (for debugging)
 // $03
 .label ret = $04
 // $05
+.label vp = $06
+// $07
+
 
 .label tmp = $a0
 // $a0-$af
@@ -98,6 +101,9 @@ _enter:
     lda #<stack_top
     sta sp
     sta fp
+
+    // Assume video pointer is in address $0013 (from KiT zp.lib)
+    mov2 $13 : vp
 
     lda fp+1
     jsr _push
@@ -409,6 +415,57 @@ divide:
     inc2 tmp
 
 done:
+    rts
+}
+
+
+
+/********************
+* BUILTIN FUNCTIONS *
+*********************/
+
+/** 
+* write the ascii char in A to the address in the video pointer
+* writes upper case as inverted, assuming data bit 6 in text mode is INV.
+* behaves like a C function (handle popping stack frame on return)
+*/
+putchar: {
+    ldy #5
+    lda (sp),y                      // get argument from stack frame
+
+    cmp #0                          // load N and Z flags with A7 and A==0
+    bmi video_write                 // if leading bit is 1, this is a graphic char. write it.
+    bne write_ascii_symbol                          
+    lda #' '                        // if A==0, write space
+    jmp video_write
+
+write_ascii_symbol:
+    cmp #$20                        // check if code is less than $20
+    bcs not_inv_symb                          
+    ora #%01100000                  // if it is, it ascii control char. map to inverted symbols
+    jmp video_write
+not_inv_symb:
+
+    cmp #$60                        // check if code is $60 or more
+    bcc video_write                 // if it's below $60, we can immediately write it
+keep_bottom_5_bits:
+    and #%00011111                  // if code is < $20 or >=$60, only keep bottom 5 bits
+
+video_write:
+    ldy #0
+    sta (vp),y                      // write six bit ascii to memory at address in video pointer
+
+    inc2 vp
+
+    // return from function call
+    jsr _pop
+	pha
+	jsr _pop
+	pha
+	jsr _pop
+	sta fp
+	jsr _pop
+	sta fp+1
     rts
 }
 

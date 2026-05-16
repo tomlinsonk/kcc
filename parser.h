@@ -15,10 +15,10 @@
 
 
 static const char *syntax_names[] = {
-    "INT_CONSTANT", "STRING", "IDENTIFIER", 
+    "INT_CONSTANT", "CHAR_CONSTANT", "STRING", "IDENTIFIER", 
     "UNARY_EXPRESSION", "BINARY_EXPRESSION", "PARENTHESIZED_EXPRESSION", "ASSIGNMENT_EXPRESSION", "POSTFIX_EXPRESSION", "NOP_EXPRESSION",
     "IF_STATEMENT", "IF_ELSE_STATEMENT", "WHILE_STATEMENT", "FOR_STATEMENT", "RETURN_STATEMENT", "EXPRESSION_STATEMENT", "COMPOUND_STATEMENT", "STATEMENT_LIST", 
-    "DECLARATOR", "ARRAY_DECLARATOR", "DECLARATION_SPECIFIER", "DECLARATION", "DECLARATION_LIST",
+    "DECLARATOR", "ARRAY_DECLARATOR", "POINTER_DECLARATOR", "DECLARATION_SPECIFIER", "DECLARATION", "DECLARATION_LIST",
     "FUNCTION_DEFINITION", "PARAMETER_LIST", "PARAMETER_DECLARATION",
     "TRANSLATION_UNIT",
     "ERROR"
@@ -29,6 +29,7 @@ extern int num_syntax_errors;
 
 enum SyntaxKind {
     INT_CONSTANT_SYNTAX,
+    CHAR_CONSTANT_SYNTAX,
     STRING_SYNTAX,
     IDENTIFIER_SYNTAX,
 
@@ -50,6 +51,7 @@ enum SyntaxKind {
 
     DECLARATOR_SYNTAX,
     ARRAY_DECLARATOR_SYNTAX,
+    POINTER_DECLARATOR_SYNTAX,
     DECLARATION_SPECIFIER_SYNTAX,
     DECLARATION_SYNTAX,
     DECLARATION_LIST_SYNTAX,
@@ -98,6 +100,7 @@ struct SyntaxNode *parse_parameter_declaration();
 struct SyntaxNode *parse_declaration_list();
 struct SyntaxNode *parse_declaration();
 struct SyntaxNode *parse_declaration_specifier();
+struct SyntaxNode *parse_declarator();
 struct SyntaxNode *parse_direct_declarator();
 
 struct SyntaxNode *parse_statement_list();

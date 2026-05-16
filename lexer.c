@@ -149,6 +149,13 @@ struct Token *lex(char input[]) {
             new_token->length = i - new_token->index;
             new_token->kind = get_identifier_kind(input, new_token->index, new_token->length);;
             new_token->string_value = input + new_token->index;
+        } else if (input[i] == '\'') {
+            /* Check for char literal */
+            i++;
+            new_token->char_value = input[i];
+            i += 2; // skip char and closing quote
+            new_token->length = 3;
+            new_token->kind = CHAR_CONSTANT_TOKEN;
         } else if (input[i] == '"') {
             /* Check for string literal */
             i++;
