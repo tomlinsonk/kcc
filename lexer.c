@@ -50,6 +50,40 @@ int get_int_value(char input[], int start, int length) {
 }
 
 /**
+ * Parse a char value from a subarray of input. Assumes the char is in single quotes
+ * @param char input[] the input text
+ * @param start the index of the opening quote in input
+ * @param length the number of characters in the char literal (3 or 4 if there's an escape character)
+ * @return the char value represented in input[start, ..., start + length - 1]
+ */
+char get_char_value(char input[], int start, int length) {
+    if (length == 3) {
+        return input[start+1];
+    } else if (length == 4 && input[start+1] == '\\') {
+        switch (input[start+2]) {
+        case 'n':
+            return '\n';
+        case 't':
+            return '\t';
+        case 'r':
+            return '\r';
+        case '0':
+            return '\0';
+        case '\\':
+            return '\\';
+        case '\'':
+            return '\'';
+        default:
+            printf("Error: unrecognized escape character \\%c\n", input[start+2]);
+            return input[start+2];
+        }
+    } else {
+        printf("Error: invalid char literal\n");
+    }
+    return '\0';
+}
+
+/**
  * Determine the token kind of an identifier (i.e., check for keywords)
  * If not a keyword, then it's an identifier
  * @param char input[] the input text
@@ -152,10 +186,15 @@ struct Token *lex(char input[]) {
         } else if (input[i] == '\'') {
             /* Check for char literal */
             i++;
-            new_token->char_value = input[i];
-            i += 2; // skip char and closing quote
-            new_token->length = 3;
+            while (input[i] != '\0' && input[i] != '\'')
+                i++;
+            
+            if (input[i] != '\0')
+                i++;
+
+            new_token->length = i - new_token->index;
             new_token->kind = CHAR_CONSTANT_TOKEN;
+            new_token->char_value = get_char_value(input, new_token->index, new_token->length);
         } else if (input[i] == '"') {
             /* Check for string literal */
             i++;

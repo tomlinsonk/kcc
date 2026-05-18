@@ -124,5 +124,9 @@ struct Token *lex(char input[]);
 
 void print_tokens(char input[], struct Token *current);
 
+enum TokenKind get_identifier_kind(char input[], int start, int length);
+int get_int_value(char input[], int start, int length);
+char get_char_value(char input[], int start, int length);
+
 #endif
 

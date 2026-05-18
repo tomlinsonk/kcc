@@ -62,7 +62,16 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
         printf(" %i", root->token->int_value);
         break;
     case CHAR_CONSTANT_SYNTAX:
-        printf(" '%c'", root->token->char_value);
+        if (root->token->char_value == '\n')
+            printf(" '\\n'");
+        else if (root->token->char_value == '\r')
+            printf(" '\\r'");
+        else if (root->token->char_value == '\t')
+            printf(" '\\t'");
+        else if (root->token->char_value == '\0')
+            printf(" '\\0'");
+        else
+            printf(" '%c'", root->token->char_value);
         break;
     case BINARY_EXPRESSION_SYNTAX:
     case UNARY_EXPRESSION_SYNTAX:
