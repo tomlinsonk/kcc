@@ -33,7 +33,12 @@ int num_semantic_errors = 0;
  */
 struct Type *get_declaration_type(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node) {
     if (specifier_node != NULL && specifier_node->token != NULL) {
-        if (declarator_node->syntax == ARRAY_DECLARATOR_SYNTAX) {
+        if (declarator_node->syntax == POINTER_DECLARATOR_SYNTAX){
+            struct Type *type = new_type(POINTER_TYPE);
+            type->size = 2;
+            type->to_type = get_declaration_type(specifier_node, declarator_node->first_child);
+            return type;
+        } else if (declarator_node->syntax == ARRAY_DECLARATOR_SYNTAX) {
             struct Type *specifier_type;
             struct Type *type;
             struct Type *cur_type;
@@ -63,8 +68,6 @@ struct Type *get_declaration_type(struct SyntaxNode *specifier_node, struct Synt
             }
             cur_type->size = cur_node->token->int_value;
             cur_type->of_type = specifier_type;
-
-
             
             return type;
         } else {
@@ -124,23 +127,6 @@ struct Type *get_enclosing_function_return_type(struct SyntaxNode *node) {
 }
 
 /**
- * Check if a node is an lvalue (an expression referring to a named region of
- * memory, like a identifier, or an indexed array).
- * @param node the node to check
- * @return 1 if node is an lvalue, 0 if not
-*/
-int is_lvalue(struct SyntaxNode *node) {
-    if (node->syntax == IDENTIFIER_SYNTAX) {
-        return 1;
-    } else if (node->syntax == POSTFIX_EXPRESSION_SYNTAX 
-               && node->token->kind == OPEN_BRACKET_TOKEN) {
-        return is_lvalue(node->first_child);
-    }
-
-    return 0;
-}
-
-/**
  * Check to see if a main method exists with signature int main().
  * @param symbol_table the top-level symbol table
  * @return 1 if main exists, 0 if not
@@ -178,15 +164,19 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         break;
     case NOP_EXPRESSION_SYNTAX:
         root->type = &VOID_TYPE;
+        root->is_lvalue = 0;
         break;
     case INT_CONSTANT_SYNTAX:
         root->type = &INT_TYPE;
+        root->is_lvalue = 0;
         break;
     case CHAR_CONSTANT_SYNTAX:
         root->type = &CHAR_TYPE;
+        root->is_lvalue = 0;
         break;
     case STRING_SYNTAX:
         root->type = &CHAR_ARRAY_TYPE;
+        root->is_lvalue = 0;
         break;
     case IDENTIFIER_SYNTAX:
         bind_identifier(root, symbol_table);
@@ -194,6 +184,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     case PARENTHESIZED_EXPRESSION_SYNTAX:
         typecheck(root->first_child, symbol_table);
         root->type = root->first_child->type;
+        root->is_lvalue = root->first_child->is_lvalue;
         break;
     case DECLARATION_SYNTAX:
         bind_declaration(root->first_child, root->last_child, symbol_table);
@@ -245,6 +236,7 @@ void typecheck_binary_expression(struct SyntaxNode *root, struct SymbolTable *sy
     typecheck(root->last_child, symbol_table);
 
     root->type = get_binary_expression_type(root->first_child->type, root->last_child->type);
+    root->is_lvalue = 0;
     
     if (types_match(root->type, &ERROR_TYPE)) {
         printf(BOLD_RED "Error: binary operator %s is not applicable to types ",  token_kind_names[root->token->kind]);
@@ -266,7 +258,8 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
     typecheck(root->first_child, symbol_table);
     typecheck(root->last_child, symbol_table);
 
-    root->first_child->is_lvalue = is_lvalue(root->first_child);
+    root->is_lvalue = 0;
+
     if (!root->first_child->is_lvalue) {
         printf(BOLD_RED "Error: can only assign to lvalue, not %s\n" RESET,  syntax_names[root->first_child->syntax]);
         num_semantic_errors++;
@@ -297,7 +290,7 @@ void typecheck_assignment_expression(struct SyntaxNode *root, struct SymbolTable
 void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     typecheck(root->first_child, symbol_table);
 
-    if (!is_lvalue(root->first_child)) {
+    if (!root->first_child->is_lvalue) {
         printf(BOLD_RED "Error: postfix operator %s is only applicable to lvalues, not %s \n" RESET, token_kind_names[root->token->kind], syntax_names[root->first_child->syntax]);
         num_semantic_errors++;
     }
@@ -305,8 +298,9 @@ void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *s
     switch (root->token->kind) {
     case PLUS_PLUS_TOKEN:
     case MINUS_MINUS_TOKEN:
-        if (is_numeric(root->first_child->type)) {
+        if (is_numeric(root->first_child->type) || root->first_child->type->kind == POINTER_TYPE) {
             root->type = root->first_child->type;
+            root->is_lvalue = 0;
         } else {
             root->type = &ERROR_TYPE;
             
@@ -323,6 +317,7 @@ void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *s
         if (root->first_child->type->kind == ARRAY_TYPE) {
             if (is_numeric(root->first_child->next->type)) {
                 root->type = root->first_child->type->of_type;
+                root->is_lvalue = 1;
             } else {
                 root->type = &ERROR_TYPE;
                 printf(BOLD_RED "Error: array index must be numeric\n" RESET);
@@ -404,16 +399,51 @@ void typecheck_arguments(struct SyntaxNode *argument_node, struct Type *param_ty
 void typecheck_unary_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
     typecheck(root->first_child, symbol_table);
 
-    if (is_numeric(root->first_child->type)) {
-        root->type = root->first_child->type;
-    } else {
-        root->type = &ERROR_TYPE;
+    switch (root->token->kind) {
+        case AMPERSAND_TOKEN:
+            if (root->first_child->is_lvalue) {
+                root->type = new_type(POINTER_TYPE);
+                root->type->size = 2;
+                root->type->to_type = root->first_child->type;
+                root->is_lvalue = 0;
+            } else {
+                root->type = &ERROR_TYPE;
         
-        printf(BOLD_RED "Error: unary operator %s is not applicable to type ",  token_kind_names[root->token->kind]);
-        print_type(root->first_child->type);
-        printf("\n" RESET);
+                printf(BOLD_RED "Error: unary operator %s is only applicable to lvalues, not ",  syntax_names[root->first_child->syntax]);
+                print_type(root->first_child->type);
+                printf("\n" RESET);
 
-        num_semantic_errors++;
+                num_semantic_errors++;
+            }
+            break;
+        case STAR_TOKEN:
+            if (root->first_child->type->kind == POINTER_TYPE) {
+                root->type = root->first_child->type->to_type;
+                root->is_lvalue = 1;
+            } else {
+                root->type = &ERROR_TYPE;
+        
+                printf(BOLD_RED "Error: unary operator %s is only applicable to pointers, not ",  syntax_names[root->first_child->syntax]);
+                print_type(root->first_child->type);
+                printf("\n" RESET);
+
+                num_semantic_errors++;
+            }
+
+            break;
+        default:
+            if (is_numeric(root->first_child->type)) {
+                root->type = root->first_child->type;
+            } else {
+                root->type = &ERROR_TYPE;
+                
+                printf(BOLD_RED "Error: unary operator %s is not applicable to type ",  token_kind_names[root->token->kind]);
+                print_type(root->first_child->type);
+                printf("\n" RESET);
+
+                num_semantic_errors++;
+            }
+            break;
     }
 }
 
@@ -447,7 +477,12 @@ void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *sym
 void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table) {
     struct Type *type = get_declaration_type(specifier_node, declarator_node);
 
-    char *name = copy_identifier_name(declarator_node->first_child);
+    // get identifier node (could be nested in pointers)
+    struct SyntaxNode *identifier_node = declarator_node->first_child;
+    while (identifier_node->syntax != IDENTIFIER_SYNTAX)
+        identifier_node = identifier_node->first_child;
+
+    char *name = copy_identifier_name(identifier_node);
     struct Symbol *symbol;
 
     if (type != &ERROR_TYPE && type != &VOID_TYPE && name != NULL) {
@@ -479,6 +514,7 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
 void bind_identifier(struct SyntaxNode *identifier_node, struct SymbolTable *symbol_table) {
     char *name = copy_identifier_name(identifier_node);
     struct Symbol *symbol = get_symbol(symbol_table, name);
+    identifier_node->is_lvalue = 1;
 
     if (symbol != NULL) {
         identifier_node->symbol = symbol;
@@ -500,11 +536,16 @@ void bind_identifier(struct SyntaxNode *identifier_node, struct SymbolTable *sym
  * @param symbol_table a pointer to the current scope's symbol table
  */
 void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table) {
-    char *name = copy_identifier_name(node->first_child->next->first_child);
+    // get function name (possibly nested in pointer_declarators)
+    struct SyntaxNode *identifier_node = node->first_child->next->first_child;
+    while (identifier_node->syntax != IDENTIFIER_SYNTAX)
+        identifier_node = identifier_node->first_child;
+
+    char *name = copy_identifier_name(identifier_node);
     struct Symbol *symbol;
 
     struct Type *type = new_type(FUNCTION_TYPE);
-    type->return_type = get_declaration_type(node->first_child, node->last_child);
+    type->return_type = get_declaration_type(node->first_child, node->first_child->next);
 
     // process parameter list, add to parameter type list
     if (node->first_child->next->next->syntax == PARAMETER_LIST_SYNTAX) {

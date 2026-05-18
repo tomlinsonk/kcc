@@ -66,12 +66,15 @@ void emit_array_index_postfix_expression(struct SyntaxNode *node);
 void emit_function_call_postfix_expression(struct SyntaxNode *node);
 
 void emit_unary_expression(struct SyntaxNode *node);
-void emit_unary_minus_expression(struct SyntaxNode *node);
-void emit_unary_not_expression(struct SyntaxNode *node);
+void emit_minus_unary_expression(struct SyntaxNode *node);
+void emit_not_unary_expression(struct SyntaxNode *node);
+void emit_dereference_unary_expression(struct SyntaxNode *node);
+
+void emit_address(struct SyntaxNode *node);
+void emit_identifier_address(struct SyntaxNode *node);
+void emit_array_index_address(struct SyntaxNode *node);
 
 void emit_assignment_expression(struct SyntaxNode *node);
-void emit_simple_assignment_expression(struct SyntaxNode *node);
-void emit_complex_assignment_expression(struct SyntaxNode *node);
 
 void emit_identifier(struct SyntaxNode *node);
 void emit_int_constant(struct SyntaxNode *node);

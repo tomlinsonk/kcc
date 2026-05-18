@@ -446,17 +446,27 @@ void emit_binary_expression(struct SyntaxNode *node) {
  * @param node the expression node
 */
 void emit_unary_expression(struct SyntaxNode *node) {
-    emit_expression(node->first_child);
+    // Addressof operator doesn't evaluate child's value
+    if (node->token->kind != AMPERSAND_TOKEN)
+        emit_expression(node->first_child);
 
     switch (node->token->kind) {
+    case AMPERSAND_TOKEN:
+        start_chunk("unary &");
+        emit_address(node->first_child);
+        end_chunk("unary &");
+        break;
     case PLUS_TOKEN:
         // Unary plus does nothing for us (real C promotes to int)
         break;
     case MINUS_TOKEN:
-        emit_unary_minus_expression(node);
+        emit_minus_unary_expression(node);
         break;
     case BANG_TOKEN:
-        emit_unary_not_expression(node);
+        emit_not_unary_expression(node);
+        break;
+    case STAR_TOKEN:
+        emit_dereference_unary_expression(node);
         break;
     default:
         printf(BOLD_RED "Error: can't emit unary operator %s\n" RESET, token_kind_names[node->token->kind]);
@@ -468,7 +478,7 @@ void emit_unary_expression(struct SyntaxNode *node) {
  * Emit assembly for a unary minus expression
  * @param node expression node
 */
-void emit_unary_minus_expression(struct SyntaxNode *node) {
+void emit_minus_unary_expression(struct SyntaxNode *node) {
     start_chunk("unary -");
     if (node->type->size == 2) {
         emit("ldy #1");
@@ -497,7 +507,7 @@ void emit_unary_minus_expression(struct SyntaxNode *node) {
  * Emit assembly for a unary not expression
  * @param node expression node
 */
-void emit_unary_not_expression(struct SyntaxNode *node) {
+void emit_not_unary_expression(struct SyntaxNode *node) {
     struct Label *done_label = new_label();
 
     start_chunk("unary !");
@@ -520,6 +530,114 @@ void emit_unary_not_expression(struct SyntaxNode *node) {
 
     end_chunk("unary !");
 }
+
+/**
+ * Push the address of an lvalue onto the stack
+ * @param node the node
+ */
+void emit_address(struct SyntaxNode *node) {
+    switch (node->syntax) {
+    case IDENTIFIER_SYNTAX:
+        emit_identifier_address(node);
+        break;
+    case PARENTHESIZED_EXPRESSION_SYNTAX:
+        emit_address(node->first_child);
+        break;
+    case POSTFIX_EXPRESSION_SYNTAX:
+        if (node->token->kind == OPEN_BRACKET_TOKEN) {
+            emit_array_index_address(node);
+        } else {
+            printf(BOLD_RED "Error: can't emit address for postfix expression with token %s\n" RESET, token_kind_names[node->token->kind]);
+        }
+        break;
+    case UNARY_EXPRESSION_SYNTAX:
+        if (node->token->kind == STAR_TOKEN) {
+            emit_expression(node->first_child);
+        } else {
+            printf(BOLD_RED "Error: can't emit address for unary expression with token %s\n" RESET, token_kind_names[node->token->kind]);
+        }
+        break;
+    default:
+        printf(BOLD_RED "Error: can't emit address for syntax kind %s\n" RESET, syntax_names[node->syntax]);
+        break;
+    }
+}
+
+/**
+ * Emit assembly for the address of an identifier. Pushes the address to the stack.
+ * @param node the identifier node
+ */
+void emit_identifier_address(struct SyntaxNode *node) {
+    start_chunk("identifier address");
+    emit("mov2 fp : tmp");
+    emit("add2 tmp : #%i", node->symbol->offset + 1);
+    emit("lda tmp+1");
+    emit("jsr _push");
+    emit("lda tmp");
+    emit("jsr _push");
+    end_chunk("identifier address");
+}
+
+
+/**
+ * Emit assembly for the address of an array index expression like a[i]. Pushes the address to the stack.
+ * @param node the array index expression node
+ */
+void emit_array_index_address(struct SyntaxNode *node) {
+    start_chunk("array index address");
+
+    // Push the array address on the stack
+    emit_address(node->first_child);
+
+    // Push the index onto the stack
+    emit_expression(node->last_child);
+
+    if (!types_match(node->last_child->type, &INT_TYPE))
+        emit_type_conversion(node->last_child->type, &INT_TYPE);
+
+    int element_size = get_memory_size(node->type);
+
+    if (element_size == 1) {
+        // Do nothing! The index is the offset
+    } else if (element_size == 2) {
+        // Multiply offset by 2
+        emit("jsr _pop");
+        emit("sta tmp");
+        emit("jsr _pop");
+        emit("sta tmp+1");
+        emit("asl tmp");
+        emit("rol tmp+1");
+        emit("lda tmp+1");
+        emit("jsr _push");
+        emit("lda tmp");
+        emit("jsr _push");
+    } else {
+        // Do multiply routine to compute offset.
+        emit("lda #>%i", element_size);
+        emit("jsr _push");
+        emit("lda #<%i", element_size);
+        emit("jsr _push");
+
+        emit_two_byte_multiply();
+    }
+
+    emit_two_byte_add();
+
+    end_chunk("array index address");
+}
+
+
+/**
+ * Emit assembly for a dereference expression like *p
+ * @param node the expression node
+ */
+void emit_dereference_unary_expression(struct SyntaxNode *node) {
+    start_chunk("unary *");
+
+
+    end_chunk("unary *");
+}
+
 
 /**
  * Emit assembly for an addition expression
@@ -1095,12 +1213,7 @@ void emit_identifier(struct SyntaxNode *node) {
     start_chunk("identifier");
 
     if (node->type->kind == ARRAY_TYPE) {
-        emit("mov2 fp : tmp");
-        emit("add2 tmp : #%i", node->symbol->offset + 1);
-        emit("lda tmp+1");
-        emit("jsr _push");
-        emit("lda tmp");
-        emit("jsr _push"); 
+        emit_identifier_address(node);
     } else if (node->type->size == 1) {
         emit("mov2 fp : tmp");
         emit("add2 tmp : #%i", node->symbol->offset + 1);
@@ -1120,59 +1233,16 @@ void emit_identifier(struct SyntaxNode *node) {
 
 
 /**
- * Emit assembly for an assignment expression. Updates the value stored in the 
- * left hand side and leaves new value on top of the stack
- * @param node the assignment expression node
- */
-void emit_assignment_expression(struct SyntaxNode *node) {
-    if (node->first_child->syntax == IDENTIFIER_SYNTAX) {
-        emit_simple_assignment_expression(node);
-    } else {
-        emit_complex_assignment_expression(node);
-    }
-}
-
-/**
- * Emit assembly for an assignment expression in which the lvalue is an
- * identifier. 
- * @param node the assignment expression node
-*/
-void emit_simple_assignment_expression(struct SyntaxNode *node) {
-    emit_expression(node->last_child);
-
-    if (!types_match(node->type, node->last_child->type)) 
-        emit_type_conversion(node->last_child->type, node->type);
-
-    start_chunk("simple assignment");
-
-    emit("mov2 fp : tmp");
-    emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
-    emit("ldy #1");
-    emit("lda (sp),y");
-    emit("sta (tmp)");
-
-    if (node->type->size == 2) {
-        emit("inc2 tmp");
-        emit("iny");
-        emit("lda (sp),y");
-        emit("sta (tmp)");
-    }
-
-    end_chunk("simple assignment");
-}
-
-
-/**
- * Emit assembly for an assignment expression in which the lvalue is not just
- * an identifier and needs to be computed.
+ * Emit assembly for an assignment expression.
  * 1) compute the memory address of the lvalue and push it onto the stack
  * 2) compute the value to assign and push it onto the stack
  * 3) pop the value and the address and update the value at the address 
  * @param node the assignment expression node
 */
-void emit_complex_assignment_expression(struct SyntaxNode *node) {
+void emit_assignment_expression(struct SyntaxNode *node) {
+    start_chunk("assignment expression");
     // compute the address and push it onto the stack
-    emit_expression(node->first_child);
+    emit_address(node->first_child);
 
     // compute the new value and push it onto the stack
     emit_expression(node->last_child);
@@ -1181,7 +1251,6 @@ void emit_complex_assignment_expression(struct SyntaxNode *node) {
     if (!types_match(node->type, node->last_child->type)) 
         emit_type_conversion(node->last_child->type, node->type);
 
-    start_chunk("complex assignment");
 
     // Pop the value and store in tmp (and tmp+1 if two bytes)
     emit("jsr _pop");
@@ -1209,7 +1278,7 @@ void emit_complex_assignment_expression(struct SyntaxNode *node) {
     }
 
 
-    end_chunk("complex assignment");
+    end_chunk("assignment expression");
 }
 
 
@@ -1290,67 +1359,32 @@ void emit_decrement_postfix_expression(struct SyntaxNode *node) {
 
 
 /**
- * Emit assembly for an array index expression. If node is an lvalue or has array
- * type, places the address of the array item on the stack. Otherwise, places the
- * value of the array item on the stack.
+ * Emit assembly for an array index expression. Places the
+ * value of the array item on the stack. (emit_array_index_address would be
+ * called to push the address onto the stack)
  * @param node the SyntaxNode of the array index postfix expression
 */
 void emit_array_index_postfix_expression(struct SyntaxNode *node) {
-    // Push the array address on the stack
-    emit_expression(node->first_child);
-
-    // Push the index onto the stack
-    emit_expression(node->last_child);
-
-    if (!types_match(node->last_child->type, &INT_TYPE))
-        emit_type_conversion(node->last_child->type, &INT_TYPE);
-
     start_chunk("array index expression");
-    int element_size = get_memory_size(node->type);
 
-    if (element_size == 1) {
-        // Do nothing! The index is the offset
-    } else if (element_size == 2) {
-        // Multiply offset by 2
-        emit("jsr _pop");
-        emit("sta tmp");
-        emit("jsr _pop");
-        emit("sta tmp+1");
-        emit("asl tmp");
-        emit("rol tmp+1");
-        emit("lda tmp+1");
-        emit("jsr _push");
-        emit("lda tmp");
-        emit("jsr _push");
-    } else {
-        // Do multiply routine to compute offset.
-        emit("lda #>%i", element_size);
-        emit("jsr _push");
-        emit("lda #<%i", element_size);
-        emit("jsr _push");
+    emit_array_index_address(node);
 
-        emit_two_byte_multiply();
-    }
+    // Retrieve the value at the computed address
+    emit("jsr _pop");
+    emit("sta tmp");
+    emit("jsr _pop");
+    emit("sta tmp+1");
 
-    emit_two_byte_add();
-
-    // If we want the value rather than the index, retreive it
-    if (!node->is_lvalue && node->type->kind != ARRAY_TYPE) {
-        emit("jsr _pop");
-        emit("sta tmp");
-        emit("jsr _pop");
-        emit("sta tmp+1");
-
-        if (node->type->size == 2) {
-            emit("inc2 tmp");
-            emit("lda (tmp)");
-            emit("jsr _push");
-            emit("dec2 tmp");
-        }
-
+    if (node->type->size == 2) {
+        emit("inc2 tmp");
         emit("lda (tmp)");
         emit("jsr _push");
+        emit("dec2 tmp");
     }
+
+    emit("lda (tmp)");
+    emit("jsr _push");
+    
 
     end_chunk("array index expression");
 }
