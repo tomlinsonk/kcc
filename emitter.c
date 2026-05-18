@@ -442,7 +442,10 @@ void emit_binary_expression(struct SyntaxNode *node) {
 }
 
 /**
- * Emit assembly for a unary expression
+ * Emit assembly for a unary expression. Evaluates the child expression, 
+ * which pushes the value onto the stack. 
+ * For the addressof operator, the child's value is not evaluated and the
+ * child's address is pushed to the stack instead.
  * @param node the expression node
 */
 void emit_unary_expression(struct SyntaxNode *node) {
@@ -628,13 +631,25 @@ void emit_array_index_address(struct SyntaxNode *node) {
 
 
 /**
- * Emit assembly for a dereference expression like *p
+ * Emit assembly for a dereference expression like *p (child already evalued and
+ * pushed to the stack). Pops the address off the stack, dereferences it, and
+ * pushes the value onto the stack.
  * @param node the expression node
  */
 void emit_dereference_unary_expression(struct SyntaxNode *node) {
     start_chunk("unary *");
-
-
+    emit("jsr _pop");
+    emit("sta tmp");
+    emit("jsr _pop");
+    emit("sta tmp+1");
+    
+    if (node->type->size == 2) {
+        emit("ldy #1");
+        emit("lda (tmp),y");
+        emit("jsr _push");
+    }
+    emit("lda (tmp)");
+    emit("jsr _push");
     end_chunk("unary *");
 }
 
