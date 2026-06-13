@@ -79,6 +79,7 @@ void emit_assignment_expression(struct SyntaxNode *node);
 void emit_identifier(struct SyntaxNode *node);
 void emit_int_constant(struct SyntaxNode *node);
 void emit_char_constant(struct SyntaxNode *node);
+void emit_string_literal(struct SyntaxNode *node);
 
 void emit(char *str, ...);
 void emit_label(struct Label *label);

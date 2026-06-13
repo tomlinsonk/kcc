@@ -26,6 +26,7 @@ void typecheck_unary_expression(struct SyntaxNode *root, struct SymbolTable *sym
 void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *symbol_table);
 void typecheck_return_statement(struct SyntaxNode *root, struct SymbolTable *symbol_table);
 void typecheck_arguments(struct SyntaxNode *argument_node, struct Type *param_type, struct SymbolTable *symbol_table);
+void bind_and_typecheck_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table);
 
 void register_builtins(struct SymbolTable *symbol_table);
 void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table);

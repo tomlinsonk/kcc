@@ -57,16 +57,23 @@ struct Type *get_declaration_type(struct SyntaxNode *specifier_node, struct Synt
             }
 
             type = new_type(ARRAY_TYPE);
-            
+            // intialize size to 0 for now; update if there is a size in the declaration
+            type->size = 0;
+
             cur_node = declarator_node->first_child->next;
             cur_type = type; 
-            while (cur_node->next != NULL) {
+
+            // Handle declarations with sizes like int arr[10][20] by creating a linked chain of array types
+            if (cur_node != NULL) {
+                while (cur_node->next != NULL) {
+                    cur_type->size = cur_node->token->int_value;
+                    cur_type->of_type = new_type(ARRAY_TYPE);
+                    cur_type = cur_type->of_type;
+                    cur_node = cur_node->next;
+                }
                 cur_type->size = cur_node->token->int_value;
-                cur_type->of_type = new_type(ARRAY_TYPE);
-                cur_type = cur_type->of_type;
-                cur_node = cur_node->next;
             }
-            cur_type->size = cur_node->token->int_value;
+
             cur_type->of_type = specifier_type;
             
             return type;
@@ -175,7 +182,9 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         root->is_lvalue = 0;
         break;
     case STRING_SYNTAX:
-        root->type = &CHAR_ARRAY_TYPE;
+        root->type = new_type(ARRAY_TYPE);
+        root->type->of_type = &CHAR_TYPE;
+        root->type->size = root->token->length + 1;
         root->is_lvalue = 0;
         break;
     case IDENTIFIER_SYNTAX:
@@ -187,7 +196,7 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         root->is_lvalue = root->first_child->is_lvalue;
         break;
     case DECLARATION_SYNTAX:
-        bind_declaration(root->first_child, root->last_child, symbol_table);
+        bind_and_typecheck_declaration(root->first_child, root->last_child, symbol_table);
         break;
     case FUNCTION_DEFINITION_SYNTAX:
         bind_function_definition(root, symbol_table);
@@ -314,7 +323,7 @@ void typecheck_postfix_expression(struct SyntaxNode *root, struct SymbolTable *s
     case OPEN_BRACKET_TOKEN:
         typecheck(root->first_child->next, symbol_table);
 
-        if (root->first_child->type->kind == ARRAY_TYPE) {
+        if (root->first_child->type->kind == ARRAY_TYPE || root->first_child->type->kind == POINTER_TYPE) {
             if (is_numeric(root->first_child->next->type)) {
                 root->type = root->first_child->type->of_type;
                 root->is_lvalue = 1;
@@ -505,6 +514,35 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
     }
 }
 
+
+/**
+ * Bind a declaration, then check for type validity.
+ * Currently, only checks that array declarations have valid sizes
+ * @param specifier_node a pointer to the declaration specifier node
+ * @param declarator_node a pointer to the declarator node
+ * @param symbol_table a pointer to the current scope's symbol table
+ */
+void bind_and_typecheck_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *declarator_node, struct SymbolTable *symbol_table) {
+    bind_declaration(specifier_node, declarator_node, symbol_table);
+
+    // make sure array declarations have valid sizes
+    if (declarator_node->syntax == ARRAY_DECLARATOR_SYNTAX) {
+         if (declarator_node->first_child->next == NULL || declarator_node->first_child->next->syntax != INT_CONSTANT_SYNTAX) {
+            num_semantic_errors++;
+            printf(BOLD_RED "Error: array declarator missing size\n" RESET);
+         }
+
+        struct Type *cur_type = declarator_node->type;
+        while (cur_type->kind == ARRAY_TYPE) {
+            if (cur_type->size <= 0) {
+                printf(BOLD_RED "Error: array size must be positive integer\n" RESET);
+                num_semantic_errors++;
+                break;
+            }
+            cur_type = cur_type->of_type;
+        }
+    }
+}
 
 /**
  * Look up an identifier in the symbol table, ensure it exists, and store its type in the tree

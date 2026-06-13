@@ -105,10 +105,10 @@ Steps towards Milestone 2.5:
 4. ~~Modulus~~
 
 
-#### Milestone 3: Sorting
+#### ~~Milestone 3: Sorting~~ Completed!
 Time to go big! I want to compile insertion sort:
 ```C
-void print_arr(int *arr, int n) {
+void print_arr(int arr[], int n) {
     int i;
 
     for (i = 0; i < n; i++) {
@@ -118,7 +118,7 @@ void print_arr(int *arr, int n) {
     putchar('\n');
 }
 
-void insertion_sort(int *arr, int n) {
+void insertion_sort(int arr[], int n) {
     int tmp;
     int j;
     int i;
@@ -170,11 +170,11 @@ Steps towards Milestone 3:
     - ~~emitting function calls with parameters~~
 - ~~char literals~~
 - ~~`putchar`~~
-- pointers
+- ~~pointers~~
     - ~~parsing pointers (declarators and operators)~~
-    - pointer type support
-    - emitting pointers
-    - & and * operators
+    - ~~pointer type support~~
+    - ~~emitting pointers~~
+    - ~~& and * operators~~
 
 ## Design details
 Recall, the 6502 is little-endian (lower order bytes in smaller address)

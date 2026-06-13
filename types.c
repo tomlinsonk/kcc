@@ -170,6 +170,9 @@ struct Type *copy_type(struct Type *type) {
 */
 int can_autoconvert(struct Type *from_type, struct Type *to_type) {
     if (from_type != NULL && to_type != NULL) {
+        if (from_type->kind == ARRAY_TYPE && to_type->kind == POINTER_TYPE)
+            return types_match(from_type->of_type, to_type->to_type);
+            
         switch (from_type->kind) {
         case PRIMITIVE_TYPE:
             if ((from_type->primitive == INT_PRIMITIVE && to_type->primitive == CHAR_PRIMITIVE) 

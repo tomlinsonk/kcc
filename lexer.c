@@ -204,7 +204,7 @@ struct Token *lex(char input[]) {
             if (input[i] != '\0')
                 i++;
 
-            new_token->length = i - new_token->index;
+            new_token->length = i - new_token->index - 2;
             new_token->kind = STRING_TOKEN;
             new_token->string_value = input + new_token->index + 1;
         } else if (input[i] == '>' && input[i+1] == '>') {

@@ -84,6 +84,9 @@ void pretty_print_helper(struct SyntaxNode *root, char* indent, int indent_size,
     case IDENTIFIER_SYNTAX:
         printf(" %.*s" , root->token->length, root->token->string_value);
         break;
+    case STRING_SYNTAX:
+        printf(" \"%.*s\"" , root->token->length, root->token->string_value);
+        break;
     default:
         break;
     }
@@ -520,8 +523,11 @@ struct SyntaxNode *parse_direct_declarator() {
             node->syntax = ARRAY_DECLARATOR_SYNTAX;
             while (cur_token->kind == OPEN_BRACKET_TOKEN) {
                 match(OPEN_BRACKET_TOKEN);
-                add_syntax_child(node, new_syntax_node(INT_CONSTANT_SYNTAX, cur_token));
-                match(INT_CONSTANT_TOKEN);
+                // Optional size (e.g., function param int arr[] vs declaration int arr[10];)
+                if (cur_token->kind != CLOSE_BRACKET_TOKEN) {
+                    add_syntax_child(node, new_syntax_node(INT_CONSTANT_SYNTAX, cur_token));
+                    match(INT_CONSTANT_TOKEN);
+                }
                 match(CLOSE_BRACKET_TOKEN);
             }
         }

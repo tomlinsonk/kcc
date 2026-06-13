@@ -289,7 +289,7 @@ void emit_expression_statement(struct SyntaxNode *node) {
     if (node->first_child != NULL) {
         emit_expression(node->first_child);
         if (node->first_child->type->size > 0)
-            emit("add2 sp : #%i", node->first_child->type->size);
+            emit("add2 sp : #%i", get_memory_size(node->first_child->type));
     }
 }
 
@@ -326,6 +326,9 @@ void emit_expression(struct SyntaxNode *node) {
     case CHAR_CONSTANT_SYNTAX:
         emit_char_constant(node);
         break;
+    case STRING_SYNTAX:
+        emit_string_literal(node);
+        break;
     default:
         printf(BOLD_RED "Error: can't emit expression kind %s\n" RESET, syntax_names[node->syntax]);
         break;
@@ -358,6 +361,21 @@ void emit_char_constant(struct SyntaxNode *node) {
     emit("lda #%i", node->token->char_value);
     emit("jsr _push");
     end_chunk("char constant");
+}
+
+/**
+ * Emit assembly for a string literal. Pushes the null-terminated char array to the stack.
+ */
+void emit_string_literal(struct SyntaxNode *node) {
+    start_chunk("string literal");
+    for (int i = 0; i < node->token->length; i++) {
+        emit("lda #'%c'", *(node->token->string_value+i));
+        emit("jsr _push");
+    }
+    emit("lda #0");
+    emit("jsr _push");
+
+    end_chunk("string literal");
 }
 
 
@@ -590,7 +608,7 @@ void emit_array_index_address(struct SyntaxNode *node) {
     start_chunk("array index address");
 
     // Push the array address on the stack
-    emit_address(node->first_child);
+    emit_expression(node->first_child);
 
     // Push the index onto the stack
     emit_expression(node->last_child);
@@ -1639,6 +1657,8 @@ void emit_type_conversion(struct Type *from_type, struct Type *to_type) {
         emit("jsr _push");
         emit("lda tmp");
         emit("jsr _push");
+    } else if (from_type->kind == ARRAY_TYPE && to_type->kind == POINTER_TYPE) {
+        // no conversion needed
     } else {
         printf(BOLD_RED "Error: No emitter support for conversion from type ");
         print_type(from_type);
