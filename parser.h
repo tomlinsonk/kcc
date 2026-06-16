@@ -11,7 +11,7 @@
 #include "types.h"
 #include "lexer.h"
 #include "symbols.h"
-
+#include "semantics.h"
 
 
 static const char *syntax_names[] = {
@@ -100,6 +100,7 @@ struct SyntaxNode {
     struct Type *type;
     int is_lvalue;
     struct Symbol *symbol;
+    struct Label *label;
     struct SyntaxNode *first_child;
     struct SyntaxNode *last_child;
     struct SyntaxNode *next;

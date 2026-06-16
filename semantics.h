@@ -10,8 +10,17 @@
 
 #include "parser.h"
 #include "symbols.h"
+#include "types.h"
+
+struct NodeList {
+    struct SyntaxNode **array;
+    int capacity;
+    int size;
+};
 
 extern int num_semantic_errors;
+extern struct NodeList literal_list;
+
 
 int main_exists(struct SymbolTable *symbol_table);
 struct Type *get_enclosing_function_return_type(struct SyntaxNode *node);
@@ -33,5 +42,8 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
 void bind_identifier(struct SyntaxNode *identifier_node, struct SymbolTable *symbol_table);
 void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbol_table);
 void bind_function_parameters(struct SyntaxNode *function_node, struct SymbolTable *symbol_table);
+
+void init_literal_list();
+void add_literal(struct SyntaxNode *node);
 
 #endif

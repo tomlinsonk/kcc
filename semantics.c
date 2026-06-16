@@ -21,9 +21,11 @@
 #include "lexer.h"
 #include "types.h"
 #include "symbols.h"
+#include "emitter.h"
 
 int num_semantic_errors = 0;
-
+struct NodeList literal_list;
+int INITIAL_CAPACITY = 10;
 
 /**
  * Determine the type of a declaration
@@ -186,6 +188,8 @@ void typecheck(struct SyntaxNode *root, struct SymbolTable *symbol_table) {
         root->type->of_type = &CHAR_TYPE;
         root->type->size = root->token->length + 1;
         root->is_lvalue = 0;
+        root->label = new_label();
+        add_literal(root);
         break;
     case IDENTIFIER_SYNTAX:
         bind_identifier(root, symbol_table);
@@ -498,7 +502,7 @@ void bind_declaration(struct SyntaxNode *specifier_node, struct SyntaxNode *decl
         // Use get_symbol_in_table rather than get_symbol to allow shadowing
         if (get_symbol_in_table(symbol_table, name) == NULL) {
             symbol = new_symbol(name, type);
-            add_symbol(symbol_table, symbol);
+            add_symbol_to_table(symbol_table, symbol);
             declarator_node->first_child->symbol = symbol;
             declarator_node->type = type;
             declarator_node->type = type;
@@ -608,7 +612,7 @@ void bind_function_definition(struct SyntaxNode *node, struct SymbolTable *symbo
     if (type->return_type != &ERROR_TYPE && name != NULL) {
         if (get_symbol_in_table(symbol_table, name) == NULL) {
             symbol = new_symbol(name, type);
-            add_symbol(symbol_table, symbol);
+            add_symbol_to_table(symbol_table, symbol);
             node->symbol = symbol;
         } else {
             num_semantic_errors++;
@@ -663,11 +667,46 @@ void compute_param_bytes(struct SyntaxNode *function_node) {
  * @param symbol_table the root symbol table
  */
 void register_builtins(struct SymbolTable *symbol_table) {
-    // putchar(char c)
+    // void putchar(char c)
     struct Type *putchar_type = new_type(FUNCTION_TYPE);
     putchar_type->return_type = &VOID_TYPE;
     putchar_type->param_type = new_type(PRIMITIVE_TYPE);
     putchar_type->param_type->primitive = CHAR_PRIMITIVE;
-    struct Symbol *putchar_symbol = new_symbol(strdup("putchar"), putchar_type);
-    add_symbol(symbol_table, putchar_symbol);
+    add_symbol_to_table(symbol_table, new_symbol(strdup("putchar"), putchar_type));
+
+    // void puts(char *c)
+    struct Type *puts_type = new_type(FUNCTION_TYPE);
+    puts_type->return_type = &VOID_TYPE;
+    puts_type->param_type = new_type(POINTER_TYPE);
+    puts_type->param_type->of_type = &CHAR_TYPE;
+    add_symbol_to_table(symbol_table, new_symbol(strdup("puts"), puts_type));
 }
+
+
+/**
+ * Initialize the literal arraylist
+ */
+void init_literal_list() {
+    literal_list.array = malloc(INITIAL_CAPACITY * sizeof(struct SyntaxNode *));
+    literal_list.capacity = INITIAL_CAPACITY;
+    literal_list.size = 0;
+}
+
+/**
+ * Add a SyntaxNode to the literal arraylist. Resize if needed.
+ * @param node the SyntaxNode to add
+ */
+void add_literal(struct SyntaxNode *node) {
+    if (literal_list.size == literal_list.capacity) {
+        struct SyntaxNode **new_array = malloc(2 * literal_list.capacity * sizeof(struct SyntaxNode *));
+        for (int i = 0; i < literal_list.size; i++)
+            new_array[i] = literal_list.array[i];
+        
+        free(literal_list.array);
+        literal_list.array = new_array;
+        literal_list.capacity = 2 * literal_list.capacity;
+    }
+    literal_list.array[literal_list.size] = node;
+    literal_list.size++;
+}
+

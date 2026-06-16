@@ -40,7 +40,7 @@ struct Symbol *new_symbol(char *name, struct Type *type);
 
 struct SymbolTable *new_symbol_table();
 
-void add_symbol(struct SymbolTable *table, struct Symbol *symbol);
+void add_symbol_to_table(struct SymbolTable *table, struct Symbol *symbol);
 
 struct Symbol *get_symbol(struct SymbolTable *table, char *symbol_name);
 struct Symbol *get_symbol_in_table(struct SymbolTable *table, char *symbol_name);
@@ -48,6 +48,8 @@ struct Symbol *get_symbol_in_table(struct SymbolTable *table, char *symbol_name)
 void free_symbol_table(struct SymbolTable *table);
 
 struct SymbolTable *new_subtable(struct SymbolTable *parent);
+
+
 
 
 #endif

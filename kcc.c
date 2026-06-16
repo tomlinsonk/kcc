@@ -16,6 +16,7 @@
 #include "emitter.h"
 #include "semantics.h"
 #include "symbols.h"
+#include "stdlib.h"
 
 
 /**
@@ -49,6 +50,7 @@ int main() {
 
     symbol_table = new_symbol_table();
     register_builtins(symbol_table);
+    init_literal_list();
 
     printf("\n---- PARSE TREE ----\n");
     pretty_print(root);
@@ -83,6 +85,7 @@ int main() {
     free_tree(root);
     free_tokens(head);
     free_symbol_table(symbol_table);
+    free(literal_list.array);
     free_labels();
 
     return num_syntax_errors + num_semantic_errors;

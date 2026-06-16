@@ -121,7 +121,7 @@ void free_tree(struct SyntaxNode *root) {
             free_tree(cur_node);
             cur_node = next_node;
         }
-
+        
         free(root);
     }
 }

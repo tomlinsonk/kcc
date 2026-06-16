@@ -183,7 +183,7 @@ struct Symbol *get_symbol_in_table(struct SymbolTable *table, char *symbol_name)
  * @param table a pointer to the table to add to
  * @param symbol a pointer to the symbol to add
  */
-void add_symbol(struct SymbolTable *table, struct Symbol *symbol) {
+void add_symbol_to_table(struct SymbolTable *table, struct Symbol *symbol) {
     int i = hash(symbol->name) % table->capacity;
     struct Symbol *cur_symbol = (table->symbols)[i];
 

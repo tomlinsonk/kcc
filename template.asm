@@ -418,21 +418,10 @@ done:
     rts
 }
 
+/**
 
-
-/********************
-* BUILTIN FUNCTIONS *
-*********************/
-
-/** 
-* write the ascii char in A to the address in the video pointer
-* writes upper case as inverted, assuming data bit 6 in text mode is INV.
-* behaves like a C function (handle popping stack frame on return)
 */
-putchar: {
-    ldy #5
-    lda (sp),y                      // get argument from stack frame
-
+_write_ascii: {
     cmp #0                          // load N and Z flags with A7 and A==0
     bmi video_write                 // if leading bit is 1, this is a graphic char. write it.
     bne write_ascii_symbol                          
@@ -455,8 +444,59 @@ video_write:
     ldy #0
     sta (vp),y                      // write six bit ascii to memory at address in video pointer
 
+    rts
+}
+
+
+
+/********************
+* BUILTIN FUNCTIONS *
+*********************/
+
+/** 
+* write an ascii char argument to the address in the video pointer
+* writes upper case as inverted, assuming data bit 6 in text mode is INV.
+* behaves like a C function (handle popping stack frame on return)
+*/
+putchar: {
+    ldy #5
+    lda (sp),y                      // get argument from stack frame
+
+    jsr _write_ascii
     inc2 vp
 
+    // return from function call
+    jsr _pop
+	pha
+	jsr _pop
+	pha
+	jsr _pop
+	sta fp
+	jsr _pop
+	sta fp+1
+    rts
+}
+
+/**
+* print a char* string argument.
+*/
+puts: {
+    ldy #5
+    lda (sp),y                      // get argument from stack frame
+    sta tmp
+    iny
+    lda (sp),y                      
+    sta tmp+1
+
+write_loop:
+    lda (tmp)
+    beq done
+    jsr _write_ascii
+    inc2 vp
+    inc2 tmp
+    jmp write_loop
+
+done:
     // return from function call
     jsr _pop
 	pha

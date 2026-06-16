@@ -23,7 +23,7 @@ struct Label *new_label();
 void free_labels();
 
 void start_chunk(char *name);
-void end_chunk(char *name);
+void end_chunk(char *name); 
 
 void emit_translation_unit(struct SyntaxNode *node);
 void emit_function_definition(struct SyntaxNode *node);

@@ -16,6 +16,7 @@
 #include "lexer.h"
 #include "types.h"
 #include "symbols.h"
+#include "semantics.h"
 
 #define BOLD_RED    "\033[1m\033[31m"
 #define BOLD_YELLOW "\033[1m\033[33m"
@@ -127,6 +128,15 @@ void emit_translation_unit(struct SyntaxNode *root) {
         fputc(c, out);
 
     fclose(template);
+
+    start_chunk("literals");
+    for (int i = 0; i < literal_list.size; i++) {
+        node = literal_list.array[i];
+        emit_label(node->label);
+        emit(".text \"%.*s\"", node->token->length, node->token->string_value);
+        emit(".byte 0");
+    }
+    end_chunk("literals");
 
 
     for (node = root->first_child; node != NULL; node = node->next) {
@@ -364,17 +374,14 @@ void emit_char_constant(struct SyntaxNode *node) {
 }
 
 /**
- * Emit assembly for a string literal. Pushes the null-terminated char array to the stack.
+ * Emit assembly for a string literal. Pushes the addess of the literal.
  */
 void emit_string_literal(struct SyntaxNode *node) {
     start_chunk("string literal");
-    for (int i = 0; i < node->token->length; i++) {
-        emit("lda #'%c'", *(node->token->string_value+i));
-        emit("jsr _push");
-    }
-    emit("lda #0");
+    emit("lda #>%s", node->label->name);
     emit("jsr _push");
-
+    emit("lda #<%s", node->label->name);
+    emit("jsr _push");
     end_chunk("string literal");
 }
 
@@ -1465,14 +1472,16 @@ void emit_function_call_postfix_expression(struct SyntaxNode *node) {
     // Pop the arguments off the stack
     emit("add2 sp : #%i", node->first_child->symbol->type->param_bytes); 
 
-    // Push the return value onto the stack
-    if (node->type->size == 2) {
-        emit("lda ret+1");
+    if (!(node->type->kind == PRIMITIVE_TYPE && node->type->primitive == VOID_PRIMITIVE)) {
+        // Push the return value onto the stack
+        if (node->type->size == 2) {
+            emit("lda ret+1");
+            emit("jsr _push");
+        }
+        emit("lda ret");
         emit("jsr _push");
     }
-    emit("lda ret");
-    emit("jsr _push");
-
+    
     end_chunk("function call");
 }
 
