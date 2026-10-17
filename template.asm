@@ -118,6 +118,7 @@ _enter:
 	jmp main
 
 _exit:
+    // .byte $bb
     brk 
     nop
 

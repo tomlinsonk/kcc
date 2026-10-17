@@ -20,7 +20,7 @@
 
 
 /**
- * Compile a C program into 6502 assebly (eventually)
+ * Compile a C program into 6502 assebly
  * @return a status code indicating the number of errors that occurred (0 = success) 
  */
 int main() {

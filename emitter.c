@@ -1352,10 +1352,13 @@ void emit_postfix_expression(struct SyntaxNode *node) {
 */
 void emit_increment_postfix_expression(struct SyntaxNode *node) {
     emit_expression(node->first_child);
-   
+
     start_chunk("++ expression");
-    emit("mov2 fp : tmp");
-    emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
+    emit_address(node->first_child);
+    emit("jsr _pop");
+    emit("sta tmp");
+    emit("jsr _pop");
+    emit("sta tmp+1");
     emit("lda (tmp)");
     emit("clc");
     emit("adc #1");
@@ -1379,8 +1382,11 @@ void emit_increment_postfix_expression(struct SyntaxNode *node) {
 void emit_decrement_postfix_expression(struct SyntaxNode *node) {
     emit_expression(node->first_child);
     start_chunk("-- expression");
-    emit("mov2 fp : tmp");
-    emit("add2 tmp : #%i", 1 + node->first_child->symbol->offset);
+    emit_address(node->first_child);
+    emit("jsr _pop");
+    emit("sta tmp");
+    emit("jsr _pop");
+    emit("sta tmp+1");
     emit("lda (tmp)");
     emit("sec");
     emit("sbc #1");

@@ -108,17 +108,17 @@ Steps towards Milestone 2.5:
 #### ~~Milestone 3: Sorting~~ Completed!
 Time to go big! I want to compile insertion sort:
 ```C
-void print_arr(int arr[], int n) {
+void print_arr(int *arr, int n) {
     int i;
 
     for (i = 0; i < n; i++) {
-        putchar('0' + i);
+        putchar('0' + arr[i]);
         putchar(' ');
     }
     putchar('\n');
 }
 
-void insertion_sort(int arr[], int n) {
+void insertion_sort(int *arr, int n) {
     int tmp;
     int j;
     int i;
@@ -233,21 +233,22 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 - If and else-if
 - Arrays
 - Functions: parameters, function calling
+- Pointers (pointer types, `*` and `&` operators)
+- Strings
+
 
 
 ## Todo
-- Binary operators:  `^`, `|`, `&`, 
-- Unary operators: `*`, `~`, `++`, `--`
+- Binary operators:  `^`, `|`, `&`
+- Unary operators: `~`, `++`, `--`
 - Assigment operators `*=`, `+=`, `-=`, `/=`, `%=`, `<<=`, `>>=`, `&=`, `|=`, `^=`
 - Do-while loops
 - Switch statements
 - Labeled statements
 - Initializers
-- Pointers
 - Structs
 - Enums
 - Unions
 - Floats
-- Strings
 - Header files
 
