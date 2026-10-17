@@ -804,7 +804,7 @@ void emit_mod_binary_expression(struct SyntaxNode *node) {
         emit("sta tmp");
         emit("jsr _pop");
         emit("sta tmp+1");
-        emit("jsr _udiv16");
+        emit("jsr _mod16");
         emit("lda tmp+5");
         emit("jsr _push");
         emit("lda tmp+4");
@@ -1092,7 +1092,6 @@ void emit_equals_binary_expression(struct SyntaxNode *node) {
 void emit_less_binary_expression(struct SyntaxNode *node) {
     struct Label *done_label = new_label();
     struct Label *less_label = new_label();
-    struct Label *not_less_label = new_label();
 
     start_chunk("< expression");
     if (node->type->size == 1) {
@@ -1108,33 +1107,7 @@ void emit_less_binary_expression(struct SyntaxNode *node) {
         emit_label(done_label);
         emit("jsr _push");
     } else if (node->type->size == 2) {
-        emit("jsr _pop");
-        emit("sta tmp");
-        emit("jsr _pop");
-        emit("sta tmp+1");
-        emit("jsr _pop");
-        emit("tax");
-        emit("jsr _pop");
-        
-        emit("cmp tmp+1");
-        emit("bcc %s", less_label->name);
-        emit("bne %s", not_less_label->name);
-        emit("cpx tmp");
-        emit("bcs %s", not_less_label->name);
-
-        emit_label(less_label);
-        emit("lda #0");
-        emit("jsr _push");
-        emit("lda #1");
-        emit("jmp %s", done_label->name); 
-
-        emit_label(not_less_label);
-        emit("lda #0");
-        emit("jsr _push");
-        emit("lda #0");
-
-        emit_label(done_label);
-        emit("jsr _push");
+        emit_two_byte_signed_less(0);
     }
 
     end_chunk("< expression");
@@ -1147,7 +1120,6 @@ void emit_less_binary_expression(struct SyntaxNode *node) {
 void emit_greater_binary_expression(struct SyntaxNode *node) {
     struct Label *done_label = new_label();
     struct Label *greater_label = new_label();
-    struct Label *not_greater_label = new_label();
 
     start_chunk("> expression");
     if (node->type->size == 1) {
@@ -1165,34 +1137,7 @@ void emit_greater_binary_expression(struct SyntaxNode *node) {
         emit_label(done_label);
         emit("jsr _push");
     } else if (node->type->size == 2) {
-        emit("jsr _pop");
-        emit("tax");
-        emit("jsr _pop");
-        emit("tay");
-        emit("jsr _pop");
-        emit("sta tmp");
-        emit("jsr _pop");
-        emit("sta tmp+1");
-        
-        emit("cpy tmp+1");
-        emit("bcc %s", greater_label->name);
-        emit("bne %s", not_greater_label->name);
-        emit("cpx tmp");
-        emit("bcs %s", not_greater_label->name);
-
-        emit_label(greater_label);
-        emit("lda #0");
-        emit("jsr _push");
-        emit("lda #1");
-        emit("jmp %s", done_label->name); 
-
-        emit_label(not_greater_label);
-        emit("lda #0");
-        emit("jsr _push");
-        emit("lda #0");
-
-        emit_label(done_label);
-        emit("jsr _push");
+        emit_two_byte_signed_less(1);
     }
 
     end_chunk("> expression");
@@ -1310,13 +1255,14 @@ void emit_assignment_expression(struct SyntaxNode *node) {
     // Store the value at the address, and push it back onto the stack
     emit("lda tmp");
     emit("sta (tmp+2)");
-    emit("jsr _push");
     if (node->type->size == 2) {
         emit("ldy #1"); 
         emit("lda tmp+1");
         emit("sta (tmp+2),y");
         emit("jsr _push");
+        emit("lda tmp");
     }
+    emit("jsr _push");
 
 
     end_chunk("assignment expression");
@@ -1687,6 +1633,48 @@ void emit_type_conversion(struct Type *from_type, struct Type *to_type) {
 }
 
 
+
+
+/**
+ * Pop two ints (lhs, then rhs on top) and push 1 if lhs < rhs, else 0.
+ * Uses a signed comparison: the sign of lhs - rhs, corrected for overflow (N xor V).
+ * @param swap if 1, compare rhs < lhs instead (i.e., lhs > rhs)
+*/
+void emit_two_byte_signed_less(int swap) {
+    struct Label *no_overflow_label = new_label();
+    struct Label *less_label = new_label();
+    struct Label *done_label = new_label();
+    char *a = swap ? "tmp" : "tmp+2";
+    char *b = swap ? "tmp+2" : "tmp";
+
+    emit("jsr _pop");
+    emit("sta tmp");
+    emit("jsr _pop");
+    emit("sta tmp+1");
+    emit("jsr _pop");
+    emit("sta tmp+2");
+    emit("jsr _pop");
+    emit("sta tmp+3");
+
+    // high byte of the result
+    emit("lda #0");
+    emit("jsr _push");
+
+    emit("lda %s", a);
+    emit("cmp %s", b);
+    emit("lda %s+1", a);
+    emit("sbc %s+1", b);
+    emit("bvc %s", no_overflow_label->name);
+    emit("eor #$80");
+    emit_label(no_overflow_label);
+    emit("bmi %s", less_label->name);
+    emit("lda #0");
+    emit("jmp %s", done_label->name);
+    emit_label(less_label);
+    emit("lda #1");
+    emit_label(done_label);
+    emit("jsr _push");
+}
 
 
 void emit_two_byte_multiply() {

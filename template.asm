@@ -365,7 +365,7 @@ skip:
 /**
 16-bit signed division.
 Divides number in tmp,tmp+1 by number in tmp+2,tmp+3.
-Stores result in tmp,tmp+1 and remainder in tmp+4,tmp+5
+Stores result in tmp,tmp+1 and the remainder's magnitude in tmp+4,tmp+5
 */
 _div16: {
     .label sgn = tmp+6
@@ -416,6 +416,34 @@ divide:
     eor #$ff
     sta tmp+1
     inc2 tmp
+
+done:
+    rts
+}
+
+/**
+16-bit signed modulus. Like C, the result has the sign of the dividend.
+Divides number in tmp,tmp+1 by number in tmp+2,tmp+3.
+Stores remainder in tmp+4,tmp+5
+*/
+_mod16: {
+    .label dividend_sgn = tmp+7
+
+    lda tmp+1
+    sta dividend_sgn
+    jsr _div16
+
+    bit dividend_sgn
+    bpl done            // if dividend was positive, remainder is too
+
+    // Negate remainder
+    lda tmp+4
+    eor #$ff
+    sta tmp+4
+    lda tmp+5
+    eor #$ff
+    sta tmp+5
+    inc2 tmp+4
 
 done:
     rts

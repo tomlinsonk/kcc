@@ -89,5 +89,6 @@ void emit_type_conversion(struct Type *from_type, struct Type *to_type);
 
 void emit_two_byte_multiply();
 void emit_two_byte_add();
+void emit_two_byte_signed_less(int swap);
 
 #endif
