@@ -6,3 +6,10 @@ docs/
 todo
 input.txt
 kcc
+build/
+.source.txt
+.asminfo.txt
+out.asm
+out.prg
+out.sym
+a.out

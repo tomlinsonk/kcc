@@ -116,13 +116,14 @@ void free_labels() {
 /**
  * Emits the 65C02 assembly code for the given bound SyntaxTree
  * @param root the root of the syntax tree (a translation unit node)
+ * @param out_path the file to write the assembly to
  */
-void emit_translation_unit(struct SyntaxNode *root) {
+void emit_translation_unit(struct SyntaxNode *root, char *out_path) {
     FILE *template = fopen("template.asm", "r");
     char c;
     struct SyntaxNode *node;
 
-    out = fopen("out.asm", "w");    
+    out = fopen(out_path, "w");    
 
     while ((c = fgetc(template)) != EOF)
         fputc(c, out);

@@ -236,6 +236,26 @@ For simplicity, all expressions are evaluated using the stack. Operands are push
 - Pointers (pointer types, `*` and `&` operators)
 - Strings
 
+## Testing
+Tests in `tests/` are compiled with kcc, assembled with KickAssembler, and run in the headless [KiT emulator](https://github.com/tomlinsonk/kit-emu). Each test states what it expects in comments:
+
+```C
+// return: 111              main's return value
+// screen: 0 1 2 3 4        text that must appear on the screen
+int main() { ... }
+```
+
+```
+make test                                    # run all tests
+make test TESTS=tests/collatz.c              # run one test
+make test VERBOSE=1                          # show expected and actual results for every test
+make test KIT_EMU=../kit-emu KICKASS=../KickAssembler/KickAss.jar
+```
+
+Build output for each test (`out.asm`, `out.prg`, and the kcc, assembler, and emulator logs) goes in `build/tests/<name>/`. Test builds are assembled with `-define KIT_TEST`, which adds an emulator breakpoint at the end of the program so the emulator knows when to stop.
+
+To compile a file other than `input/input.c`, run `./kcc path/to/file.c [out.asm]`.
+
 
 
 ## Todo

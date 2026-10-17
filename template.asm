@@ -118,7 +118,9 @@ _enter:
 	jmp main
 
 _exit:
-    // .byte $bb
+#if KIT_TEST
+    bpt                             // stop the headless emulator (assemble with -define KIT_TEST)
+#endif
     brk 
     nop
 

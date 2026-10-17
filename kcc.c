@@ -21,10 +21,18 @@
 
 /**
  * Compile a C program into 6502 assebly
+ * Usage: kcc [input.c [out.asm]] (defaults: input/input.c, out.asm)
  * @return a status code indicating the number of errors that occurred (0 = success) 
  */
-int main() {
-    FILE *fp = fopen("input/input.c", "r");
+int main(int argc, char *argv[]) {
+    char *in_path = argc > 1 ? argv[1] : "input/input.c";
+    char *out_path = argc > 2 ? argv[2] : "out.asm";
+    FILE *fp = fopen(in_path, "r");
+
+    if (fp == NULL) {
+        printf(BOLD_RED "Error: couldn't open %s.\n" RESET, in_path);
+        return 1;
+    }
 
     int size = fsize(fp);
     char input[size+1];
@@ -74,8 +82,8 @@ int main() {
     printf("%i semantic errors.\n", num_semantic_errors);
 
     if (num_syntax_errors + num_semantic_errors == 0) {
-        printf("Emitting assembly to out.asm.\n");
-        emit_translation_unit(root);
+        printf("Emitting assembly to %s.\n", out_path);
+        emit_translation_unit(root, out_path);
     } else {
         printf(BOLD_RED "Not compiling due to errors.\n" RESET);
     }

@@ -25,7 +25,7 @@ void free_labels();
 void start_chunk(char *name);
 void end_chunk(char *name); 
 
-void emit_translation_unit(struct SyntaxNode *node);
+void emit_translation_unit(struct SyntaxNode *node, char *out_path);
 void emit_function_definition(struct SyntaxNode *node);
 
 void emit_compound_statement(struct SyntaxNode *node);
