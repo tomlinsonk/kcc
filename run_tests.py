@@ -109,7 +109,7 @@ def run_test(test):
     if result.returncode != 0 or not prg.is_file():
         return fail(f'assembly failed, see {out_dir / "kickass.txt"}', log)
 
-    emu_cmd = ['java', '-cp', str(EMU_CLASSES), 'KiT', '--headless', '--prg', str(prg), '--timeout-ms', str(TIMEOUT_MS)]
+    emu_cmd = ['java', '-Djava.awt.headless=true', '-cp', str(EMU_CLASSES), 'KiT', '--headless', '--no-save-ssd', '--prg', str(prg), '--timeout-ms', str(TIMEOUT_MS)]
     try:
         result = run(emu_cmd, cwd=KIT_EMU, timeout=TIMEOUT_MS / 1000 + 10)
     except subprocess.TimeoutExpired:
