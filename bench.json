@@ -6,5 +6,21 @@
     "everything_operators": {
         "bytes": 9069,
         "cycles": 51629
+    },
+    "milestone1": {
+        "bytes": 870,
+        "cycles": 1364
+    },
+    "collatz": {
+        "bytes": 1714,
+        "cycles": 253600
+    },
+    "collatz_arithmetic": {
+        "bytes": 1557,
+        "cycles": 380907
+    },
+    "insertion_sort": {
+        "bytes": 4479,
+        "cycles": 72292
     }
 }

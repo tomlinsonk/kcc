@@ -7,7 +7,7 @@ Usage: python3 run_tests.py [-v] [tests/foo.c ...]   (default: tests/*.c)
        python3 run_tests.py --bench [--save-baseline] [tests/foo.c ...]
     -v, --verbose       print expected and actual results for every test
     --bench             print program size and cycle counts, compared to bench.json
-                        (default tests: tests/everything_*.c)
+                        (default tests: BENCH_TESTS)
     --save-baseline     with --bench, save the results to bench.json
 
 Tests declare what they expect in comments:
@@ -32,6 +32,9 @@ EMU_CLASSES = ROOT / 'build' / 'kit-emu'
 BUILD_DIR = ROOT / 'build' / 'tests'
 BASELINE = ROOT / 'bench.json'
 TIMEOUT_MS = int(os.environ.get('TIMEOUT_MS', 10000))
+
+# Programs measured by --bench. Keep them unchanged so results stay comparable with bench.json.
+BENCH_TESTS = ['everything_functions', 'everything_operators', 'milestone1', 'collatz', 'collatz_arithmetic', 'insertion_sort']
 
 # Cycles are only counted for instructions in kcc's code segment (see template.asm),
 # so the monitor and interrupt handlers in ROM don't affect the count.
@@ -231,11 +234,11 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='print expected and actual results for every test')
     parser.add_argument('--bench', action='store_true', help='print size and cycle counts compared to bench.json')
     parser.add_argument('--save-baseline', action='store_true', help='with --bench, save results to bench.json')
-    parser.add_argument('tests', nargs='*', help='test files (default: tests/*.c, or tests/everything_*.c with --bench)')
+    parser.add_argument('tests', nargs='*', help='test files (default: tests/*.c, or BENCH_TESTS with --bench)')
     args = parser.parse_args()
 
     if args.bench:
-        tests = [Path(arg).resolve() for arg in args.tests] or sorted((ROOT / 'tests').glob('everything_*.c'))
+        tests = [Path(arg).resolve() for arg in args.tests] or [ROOT / 'tests' / f'{name}.c' for name in BENCH_TESTS]
         bench(tests, args.save_baseline)
         return
 

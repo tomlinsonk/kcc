@@ -32,6 +32,8 @@ void emit_compound_statement(struct SyntaxNode *node);
 void emit_statement(struct SyntaxNode *node);
 void emit_return_statement(struct SyntaxNode *node);
 void emit_expression_statement(struct SyntaxNode *node);
+void emit_discarded_expression(struct SyntaxNode *node);
+void emit_branch(struct SyntaxNode *node, struct Label *target, int when_true);
 void emit_conditional_statement(struct SyntaxNode *node, int has_else);
 void emit_while_statement(struct SyntaxNode *node);
 void emit_for_statement(struct SyntaxNode *node);
@@ -44,37 +46,27 @@ void emit_minus_binary_expression(struct SyntaxNode *node);
 void emit_times_binary_expression(struct SyntaxNode *node);
 void emit_divide_binary_expression(struct SyntaxNode *node);
 void emit_mod_binary_expression(struct SyntaxNode *node);
-void emit_equals_binary_expression(struct SyntaxNode *node);
-void emit_not_equals_binary_expression(struct SyntaxNode *node);
-void emit_less_binary_expression(struct SyntaxNode *node);
-void emit_less_equals_binary_expression(struct SyntaxNode *node);
-void emit_greater_binary_expression(struct SyntaxNode *node);
-void emit_greater_equals_binary_expression(struct SyntaxNode *node);
 
 void emit_shift(struct SyntaxNode *node, int left);
 void emit_right_shift_binary_expression(struct SyntaxNode *node);
 void emit_left_shift_binary_expression(struct SyntaxNode *node);
-void emit_or_binary_expression(struct SyntaxNode *node, struct Label *short_circuit_label);
-void emit_and_binary_expression(struct SyntaxNode *node, struct Label *short_circuit_label);
-void emit_and_short_circuit_check(struct SyntaxNode *node, struct Label *short_circuit_label);
-void emit_or_short_circuit_check(struct SyntaxNode *node, struct Label *short_circuit_label);
 
 void emit_postfix_expression(struct SyntaxNode *node);
-void emit_increment_postfix_expression(struct SyntaxNode *node);
-void emit_decrement_postfix_expression(struct SyntaxNode *node);
+void emit_increment_postfix_expression(struct SyntaxNode *node, int push_result);
+void emit_decrement_postfix_expression(struct SyntaxNode *node, int push_result);
 void emit_array_index_postfix_expression(struct SyntaxNode *node);
-void emit_function_call_postfix_expression(struct SyntaxNode *node);
+void emit_function_call_postfix_expression(struct SyntaxNode *node, int push_result);
 
 void emit_unary_expression(struct SyntaxNode *node);
 void emit_minus_unary_expression(struct SyntaxNode *node);
-void emit_not_unary_expression(struct SyntaxNode *node);
 void emit_dereference_unary_expression(struct SyntaxNode *node);
 
 void emit_address(struct SyntaxNode *node);
 void emit_identifier_address(struct SyntaxNode *node);
 void emit_array_index_address(struct SyntaxNode *node);
+void emit_array_index_address_to_tmp(struct SyntaxNode *node);
 
-void emit_assignment_expression(struct SyntaxNode *node);
+void emit_assignment_expression(struct SyntaxNode *node, int push_result);
 
 void emit_identifier(struct SyntaxNode *node);
 void emit_int_constant(struct SyntaxNode *node);
@@ -89,6 +81,5 @@ void emit_type_conversion(struct Type *from_type, struct Type *to_type);
 
 void emit_two_byte_multiply();
 void emit_two_byte_add();
-void emit_two_byte_signed_less(int swap);
 
 #endif

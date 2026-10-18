@@ -220,6 +220,12 @@ Every program must have function `int main()`. To enter the program, the executa
 ### Expressions
 For simplicity, all expressions are evaluated using the stack. Operands are pushed onto the stack (lhs then rhs) and then popped when an operator is evaluated. The result is then pushed back onto the stack, allowing easy evaluation of nested expressions.
 
+Constants and local variables ("leaves") skip the stack: operators, array indexing, assignments, and `return` load them directly into registers or `tmp`. A left operand is only loaded this way if the right operand is also a leaf, so operands are always evaluated left to right.
+
+Conditions in `if`, `while`, and `for` don't compute a value: comparisons, `&&`, `||`, and `!` compile to compares and branches straight to the right label. When one of these is used as a value (e.g. `x = a < b;`), the same branches push 0 or 1.
+
+When an expression's value is unused (expression statements and the `for` init and increment), assignments, `++`, `--`, and function calls don't push their result.
+
 ### Optimization
 After emitting, an optimization pass (`optimize.c`) cleans up the assembly. It removes each `jsr _push` that is immediately followed by `jsr _pop`, since the value is already in A. If later code might branch on the N/Z flags that `_pop` would have set, the pair becomes `cmp #0` instead.
 
@@ -238,6 +244,7 @@ After emitting, an optimization pass (`optimize.c`) cleans up the assembly. It r
 - Functions: parameters, function calling
 - Pointers (pointer types, `*` and `&` operators)
 - Strings
+
 
 ## Testing
 Tests in `tests/` are compiled with kcc, assembled with KickAssembler, and run in the headless [KiT emulator](https://github.com/tomlinsonk/kit-emu). Each test states what it expects in comments:
@@ -260,17 +267,19 @@ Build output for each test (`out.asm`, `out.prg`, and the kcc, assembler, and em
 To compile a file other than `input/input.c`, run `./kcc path/to/file.c [out.asm]`.
 
 ### Benchmarking
-`make bench` reports program size and CPU cycles for the `everything_*` tests, compared with the baseline in `bench.json`:
+Claude made my compiled code way faster...
+
+`make bench` reports program size and CPU cycles for the benchmark programs, compared with `bench.json`, which holds the numbers from the compiler before any optimizations:
 
 ```
 test                      bytes                       cycles
-everything_functions      14024  (-123, -0.9%)        430210  (-10927, -2.5%)
-everything_operators       9069  (same)                51629  (same)
+everything_functions       5804  (-8343, -59.0%)      132958  (-308179, -69.9%)
+everything_operators       3201  (-5868, -64.7%)       13986  (-37643, -72.9%)
+milestone1                  633  (-237, -27.2%)          475  (-889, -65.2%)
+collatz                     923  (-791, -46.1%)        74913  (-178687, -70.5%)
+collatz_arithmetic          813  (-744, -47.8%)       194097  (-186810, -49.0%)
+insertion_sort             2005  (-2474, -55.2%)       28963  (-43329, -59.9%)
 ```
-
-Cycles count only instructions in the program's code segment (`$1000-$4fff`), so they're deterministic. Run `make bench-save` to make the current numbers the new baseline. `TESTS=...` works here too.
-
-
 
 ## Todo
 - Binary operators:  `^`, `|`, `&`
