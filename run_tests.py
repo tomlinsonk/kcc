@@ -4,7 +4,11 @@ Compile C test programs with kcc, run them in the headless KiT emulator,
 and check the results.
 
 Usage: python3 run_tests.py [-v] [tests/foo.c ...]   (default: tests/*.c)
-    -v, --verbose   print expected and actual results for every test
+       python3 run_tests.py --bench [--save-baseline] [tests/foo.c ...]
+    -v, --verbose       print expected and actual results for every test
+    --bench             print program size and cycle counts, compared to bench.json
+                        (default tests: tests/everything_*.c)
+    --save-baseline     with --bench, save the results to bench.json
 
 Tests declare what they expect in comments:
     // return: 111          main's return value (A + 256 * X, as a signed int)
@@ -14,6 +18,7 @@ Build output for each test goes in build/tests/<name>/.
 """
 
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -25,7 +30,12 @@ KIT_EMU = Path(os.environ.get('KIT_EMU', ROOT.parent / 'kit-emu')).resolve()
 KICKASS = Path(os.environ.get('KICKASS', ROOT.parent / 'KickAssembler' / 'KickAss.jar')).resolve()
 EMU_CLASSES = ROOT / 'build' / 'kit-emu'
 BUILD_DIR = ROOT / 'build' / 'tests'
+BASELINE = ROOT / 'bench.json'
 TIMEOUT_MS = int(os.environ.get('TIMEOUT_MS', 10000))
+
+# Cycles are only counted for instructions in kcc's code segment (see template.asm),
+# so the monitor and interrupt handlers in ROM don't affect the count.
+CODE_RANGE = '1000-4fff'
 
 GREEN = '\033[32m'
 RED = '\033[1m\033[31m'
@@ -53,7 +63,7 @@ def run(cmd, cwd=ROOT, timeout=None):
 def parse_emulator_output(output):
     match = re.search(r'A: (\d+)\s+X: (\d+)', output)
     if match is None:
-        return None, []
+        return None, [], None
 
     a, x = int(match.group(1)), int(match.group(2))
     value = (x << 8) | a
@@ -64,7 +74,9 @@ def parse_emulator_output(output):
     start = lines.index('Screen:') + 1
     screen = lines[start:start + 16]
 
-    return value, screen
+    cycles = re.search(r'^Cycles: (\d+)$', output, re.MULTILINE)
+
+    return value, screen, cycles and int(cycles.group(1))
 
 
 def format_screen(screen):
@@ -88,6 +100,8 @@ def run_test(test):
         'expected_screen': expected_screen,
         'actual_return': None,
         'screen': [],
+        'cycles': None,
+        'size': None,
         'log': None,
         'failures': [],
     }
@@ -109,7 +123,11 @@ def run_test(test):
     if result.returncode != 0 or not prg.is_file():
         return fail(f'assembly failed, see {out_dir / "kickass.txt"}', log)
 
-    emu_cmd = ['java', '-Djava.awt.headless=true', '-cp', str(EMU_CLASSES), 'KiT', '--headless', '--no-save-ssd', '--prg', str(prg), '--timeout-ms', str(TIMEOUT_MS)]
+    # .prg files start with a 2-byte load address
+    info['size'] = prg.stat().st_size - 2
+
+    emu_cmd = ['java', '-Djava.awt.headless=true', '-cp', str(EMU_CLASSES), 'KiT', '--headless', '--no-save-ssd',
+               '--count-cycles', CODE_RANGE, '--prg', str(prg), '--timeout-ms', str(TIMEOUT_MS)]
     try:
         result = run(emu_cmd, cwd=KIT_EMU, timeout=TIMEOUT_MS / 1000 + 10)
     except subprocess.TimeoutExpired:
@@ -117,7 +135,7 @@ def run_test(test):
 
     log = result.stdout + result.stderr
     (out_dir / 'emu.txt').write_text(log)
-    info['actual_return'], info['screen'] = parse_emulator_output(result.stdout)
+    info['actual_return'], info['screen'], info['cycles'] = parse_emulator_output(result.stdout)
 
     if result.returncode == 2:
         return fail(f'timed out before reaching the end of main, see {out_dir / "emu.txt"}')
@@ -142,6 +160,10 @@ def print_details(info):
     actual_return = info['actual_return']
     print(f'    expected return: {"(any)" if expected_return is None else expected_return}')
     print(f'    actual return:   {"(did not run)" if actual_return is None else actual_return}')
+    if info['size'] is not None:
+        print(f'    size:            {info["size"]} bytes')
+    if info['cycles'] is not None:
+        print(f'    cycles:          {info["cycles"]}')
 
     if info['expected_screen']:
         print('    expected on screen:')
@@ -157,14 +179,65 @@ def print_details(info):
         print('\n'.join('        ' + line for line in info['log'].rstrip().splitlines()) + RESET)
 
 
+def format_change(new, old):
+    if old is None:
+        return ''
+    diff = new - old
+    if diff == 0:
+        return f'{DIM}(same){RESET}'
+    color = GREEN if diff < 0 else RED
+    return f'{color}({diff:+d}, {100 * diff / old:+.1f}%){RESET}'
+
+
+def pad(text, width):
+    visible = len(re.sub(r'\033\[[0-9;]*m', '', text))
+    return text + ' ' * max(0, width - visible)
+
+
+def bench(tests, save_baseline):
+    baseline = json.loads(BASELINE.read_text()) if BASELINE.is_file() else {}
+    results = {}
+    num_failed = 0
+
+    print(f'{"test":<24}{"bytes":>7}  {"":<18}{"cycles":>9}')
+    for test in tests:
+        info = run_test(test)
+        if info['failures'] or info['cycles'] is None:
+            num_failed += 1
+            print(f'{test.stem:<24}{RED}FAIL{RESET} {info["failures"][0] if info["failures"] else "no cycle count"}')
+            continue
+
+        results[test.stem] = {'bytes': info['size'], 'cycles': info['cycles']}
+        old = baseline.get(test.stem, {})
+        print(f'{test.stem:<24}{info["size"]:>7}  {pad(format_change(info["size"], old.get("bytes")), 18)}'
+              f'{info["cycles"]:>9}  {format_change(info["cycles"], old.get("cycles"))}')
+
+    if num_failed:
+        print(f'\n{num_failed} test(s) failed; fix them before comparing performance.')
+        sys.exit(1)
+
+    if save_baseline:
+        BASELINE.write_text(json.dumps(results, indent=4) + '\n')
+        print(f'\nSaved baseline to {os.path.relpath(BASELINE, ROOT)}')
+    elif not baseline:
+        print(f'\nNo baseline yet. Save one with `make bench-save`.')
+
+
 def main():
     if not (EMU_CLASSES / 'KiT.class').is_file():
         sys.exit(f'Emulator not built in {EMU_CLASSES}. Run `make test`.')
 
     parser = argparse.ArgumentParser(description='Run kcc tests in the headless KiT emulator.')
     parser.add_argument('-v', '--verbose', action='store_true', help='print expected and actual results for every test')
-    parser.add_argument('tests', nargs='*', help='test files (default: tests/*.c)')
+    parser.add_argument('--bench', action='store_true', help='print size and cycle counts compared to bench.json')
+    parser.add_argument('--save-baseline', action='store_true', help='with --bench, save results to bench.json')
+    parser.add_argument('tests', nargs='*', help='test files (default: tests/*.c, or tests/everything_*.c with --bench)')
     args = parser.parse_args()
+
+    if args.bench:
+        tests = [Path(arg).resolve() for arg in args.tests] or sorted((ROOT / 'tests').glob('everything_*.c'))
+        bench(tests, args.save_baseline)
+        return
 
     tests = [Path(arg).resolve() for arg in args.tests] or sorted((ROOT / 'tests').glob('*.c'))
     num_failed = 0

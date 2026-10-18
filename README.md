@@ -220,6 +220,9 @@ Every program must have function `int main()`. To enter the program, the executa
 ### Expressions
 For simplicity, all expressions are evaluated using the stack. Operands are pushed onto the stack (lhs then rhs) and then popped when an operator is evaluated. The result is then pushed back onto the stack, allowing easy evaluation of nested expressions.
 
+### Optimization
+After emitting, an optimization pass (`optimize.c`) cleans up the assembly. It removes each `jsr _push` that is immediately followed by `jsr _pop`, since the value is already in A. If later code might branch on the N/Z flags that `_pop` would have set, the pair becomes `cmp #0` instead.
+
 
 ## Supported features
 - `int` and `char` types
@@ -255,6 +258,17 @@ make test KIT_EMU=../kit-emu KICKASS=../KickAssembler/KickAss.jar
 Build output for each test (`out.asm`, `out.prg`, and the kcc, assembler, and emulator logs) goes in `build/tests/<name>/`. Test builds are assembled with `-define KIT_TEST`, which adds an emulator breakpoint at the end of the program so the emulator knows when to stop.
 
 To compile a file other than `input/input.c`, run `./kcc path/to/file.c [out.asm]`.
+
+### Benchmarking
+`make bench` reports program size and CPU cycles for the `everything_*` tests, compared with the baseline in `bench.json`:
+
+```
+test                      bytes                       cycles
+everything_functions      14024  (-123, -0.9%)        430210  (-10927, -2.5%)
+everything_operators       9069  (same)                51629  (same)
+```
+
+Cycles count only instructions in the program's code segment (`$1000-$4fff`), so they're deterministic. Run `make bench-save` to make the current numbers the new baseline. `TESTS=...` works here too.
 
 
 

@@ -12,6 +12,7 @@
 #include <stdarg.h>
 
 #include "emitter.h"
+#include "optimize.h"
 #include "parser.h"
 #include "lexer.h"
 #include "types.h"
@@ -120,16 +121,19 @@ void free_labels() {
  */
 void emit_translation_unit(struct SyntaxNode *root, char *out_path) {
     FILE *template = fopen("template.asm", "r");
+    FILE *out_file = fopen(out_path, "w");
+    char *code;
+    size_t code_size;
     char c;
     struct SyntaxNode *node;
 
-    out = fopen(out_path, "w");    
-
     while ((c = fgetc(template)) != EOF)
-        fputc(c, out);
+        fputc(c, out_file);
 
     fclose(template);
 
+    // Emit into memory so the code can be optimized before writing it out
+    out = open_memstream(&code, &code_size);
     start_chunk("literals");
     for (int i = 0; i < literal_list.size; i++) {
         node = literal_list.array[i];
@@ -149,6 +153,9 @@ void emit_translation_unit(struct SyntaxNode *root, char *out_path) {
     }
 
     fclose(out);
+    optimize(code, out_file);
+    free(code);
+    fclose(out_file);
 }
 
 

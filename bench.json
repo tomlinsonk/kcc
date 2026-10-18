@@ -1,0 +1,10 @@
+{
+    "everything_functions": {
+        "bytes": 14147,
+        "cycles": 441137
+    },
+    "everything_operators": {
+        "bytes": 9069,
+        "cycles": 51629
+    }
+}
