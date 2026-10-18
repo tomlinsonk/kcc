@@ -202,7 +202,7 @@ From top to bottom, a stack frame consists of:
 
 The first five bullets are set by the caller. Note that 1 is subtracted from the return address so that an `rts` can be used to jump to the correct return address.
 
-The frame pointer fp points to the current frame, starting at item 6 (callee locals). This is used to have a consistent offset to access locals. The current frame pointer is set by the callee when it is called.  
+The frame pointer fp points to the bottom of the current frame, just below the callee's locals. The callee sets it on entry, after allocating space for all of its locals at once (nested blocks share this space). Every local and argument is then at a non-negative offset from fp, so it can be accessed with `ldy #offset; lda (fp),y`. Variables more than 255 bytes above fp (e.g. past a large local array) are accessed through a computed pointer instead.  
 
 #### Register use
 The A, X, and Y registers may all be overwritten by the callee.

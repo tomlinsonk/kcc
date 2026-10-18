@@ -28,6 +28,70 @@ static int n_labels = 0;
 static struct Label *head_label = NULL;
 static struct Label *tail_label = NULL;
 static int local_offset = 0;
+static int frame_size = 0;
+
+
+/**
+ * Get the index of a variable's first byte relative to fp, for (fp),y addressing.
+ * Symbol offsets are relative to sp at function entry; fp sits frame_size bytes below that.
+ * @param symbol the variable's symbol
+ * @return the index (may exceed 255 for large frames)
+ */
+static int frame_index(struct Symbol *symbol) {
+    return frame_size + symbol->offset + 1;
+}
+
+/**
+ * Check whether every byte of a variable can be reached with (fp),y
+ * @param node an identifier node
+ */
+static int fits_frame_index(struct SyntaxNode *node) {
+    return frame_index(node->symbol) + get_memory_size(node->type) - 1 <= 255;
+}
+
+/**
+ * Compute the number of bytes needed for locals in a subtree, where nested
+ * compound statements stack on top of their parents and siblings share space.
+ * @param node the root of the subtree
+ */
+static int max_local_bytes(struct SyntaxNode *node) {
+    int own = 0;
+    int max_child = 0;
+
+    if (node->syntax == COMPOUND_STATEMENT_SYNTAX && node->first_child != NULL
+            && node->first_child->syntax == DECLARATION_LIST_SYNTAX) {
+        for (struct SyntaxNode *declaration = node->first_child->first_child; declaration != NULL; declaration = declaration->next)
+            own += get_memory_size(declaration->last_child->type);
+    }
+
+    for (struct SyntaxNode *child = node->first_child; child != NULL; child = child->next) {
+        int child_bytes = max_local_bytes(child);
+        if (child_bytes > max_child)
+            max_child = child_bytes;
+    }
+
+    return own + max_child;
+}
+
+/**
+ * Add or subtract 1 from a variable in place with (fp),y
+ * @param node an identifier node whose bytes fit in a frame index
+ * @param carry_op "clc" to add or "sec" to subtract
+ * @param op "adc" or "sbc"
+ */
+static void emit_frame_add(struct SyntaxNode *node, char *carry_op, char *op) {
+    emit("ldy #%i", frame_index(node->symbol));
+    emit(carry_op);
+    emit("lda (fp),y");
+    emit("%s #1", op);
+    emit("sta (fp),y");
+    if (node->type->size == 2) {
+        emit("iny");
+        emit("lda (fp),y");
+        emit("%s #0", op);
+        emit("sta (fp),y");
+    }
+}
 
 
 /**
@@ -184,7 +248,10 @@ void emit_function_definition(struct SyntaxNode *node) {
     // Emit the function label
     emit_named_label(symbol->name);
     emit("{");
-    // set frame pointer
+    // Allocate all locals and point the frame pointer at the bottom of the frame
+    frame_size = max_local_bytes(body);
+    if (frame_size > 0)
+        emit("add2 sp : #-%i", frame_size);
     emit("mov2 sp : fp");
 
     end_chunk("function setup");
@@ -197,7 +264,10 @@ void emit_function_definition(struct SyntaxNode *node) {
     emit_named_label("_return");
 
     // restore stack pointer
-    emit("mov2 fp : sp");
+    if (frame_size > 0)
+        emit("add2 fp : #%i : sp", frame_size);
+    else
+        emit("mov2 fp : sp");
 
     // pop return address off C stack and repare for rts
     emit("jsr _pop");
@@ -226,27 +296,21 @@ void emit_function_definition(struct SyntaxNode *node) {
 
 
 /**
- * Emit assembly for a compound statement. Allocates space for locals on the stack 
- * and pops them when done
+ * Emit assembly for a compound statement. Assigns frame offsets to its locals
+ * (space for them is allocated when the function starts).
  * @param node the compound statement node 
  */
 void emit_compound_statement(struct SyntaxNode *node) {
     int n_local_bytes = 0;
-    int bytes;
 
-    // Push space for locals if there are declarations
     if (node->first_child != NULL && node->first_child->syntax == DECLARATION_LIST_SYNTAX) {
         for (struct SyntaxNode *declaration = node->first_child->first_child; declaration != NULL; declaration = declaration->next) {
             n_local_bytes += get_memory_size(declaration->last_child->type);
             declaration->last_child->first_child->symbol->offset = -(n_local_bytes + local_offset);
         }
 
-        // Move stack pointer after locals for this compound statement
-        // Update local offset so that nested compound statements can allocate space for their locals
-        if (n_local_bytes > 0) {
-            emit("add2 sp : #-%i", n_local_bytes);
-            local_offset += n_local_bytes;
-        }
+        // Nested compound statements put their locals below these
+        local_offset += n_local_bytes;
     }
 
     // Emit all statements
@@ -258,11 +322,7 @@ void emit_compound_statement(struct SyntaxNode *node) {
         }
     }
 
-    // Pop locals
-    if (n_local_bytes > 0) {
-        emit("add2 sp : #%i", n_local_bytes);
-        local_offset -= n_local_bytes;
-    }
+    local_offset -= n_local_bytes;
 }
 
 /**
@@ -604,12 +664,17 @@ void emit_address(struct SyntaxNode *node) {
  * @param node the identifier node
  */
 void emit_identifier_address(struct SyntaxNode *node) {
+    int index = frame_index(node->symbol);
+
     start_chunk("identifier address");
-    emit("mov2 fp : tmp");
-    emit("add2 tmp : #%i", node->symbol->offset + 1);
-    emit("lda tmp+1");
+    emit("clc");
+    emit("lda fp");
+    emit("adc #<%i", index);
+    emit("tax");
+    emit("lda fp+1");
+    emit("adc #>%i", index);
     emit("jsr _push");
-    emit("lda tmp");
+    emit("txa");
     emit("jsr _push");
     end_chunk("identifier address");
 }
@@ -1203,21 +1268,30 @@ void emit_not_equals_binary_expression(struct SyntaxNode *node) {
  * @param node the identifier node
  */
 void emit_identifier(struct SyntaxNode *node) {
+    int index = frame_index(node->symbol);
+
     start_chunk("identifier");
 
     if (node->type->kind == ARRAY_TYPE) {
         emit_identifier_address(node);
-    } else if (node->type->size == 1) {
-        emit("mov2 fp : tmp");
-        emit("add2 tmp : #%i", node->symbol->offset + 1);
-        emit("lda (tmp)");
+    } else if (fits_frame_index(node)) {
+        if (node->type->size == 2) {
+            emit("ldy #%i", index + 1);
+            emit("lda (fp),y");
+            emit("jsr _push");
+            emit("dey");
+        } else {
+            emit("ldy #%i", index);
+        }
+        emit("lda (fp),y");
         emit("jsr _push");
-    } else if (node->type->size == 2) {
-        emit("mov2 fp : tmp");
-        emit("add2 tmp : #%i", node->symbol->offset + 2);
-        emit("lda (tmp)");
-        emit("jsr _push");
-        emit("dec2 tmp");
+    } else {
+        emit("add2 fp : #%i : tmp", index);
+        if (node->type->size == 2) {
+            emit("ldy #1");
+            emit("lda (tmp),y");
+            emit("jsr _push");
+        }
         emit("lda (tmp)");
         emit("jsr _push");
     }
@@ -1230,12 +1304,18 @@ void emit_identifier(struct SyntaxNode *node) {
  * 1) compute the memory address of the lvalue and push it onto the stack
  * 2) compute the value to assign and push it onto the stack
  * 3) pop the value and the address and update the value at the address 
+ * Assignments to variables in the frame skip step 1 and store with (fp),y.
  * @param node the assignment expression node
 */
 void emit_assignment_expression(struct SyntaxNode *node) {
+    struct SyntaxNode *lvalue = node->first_child;
+    int direct = lvalue->syntax == IDENTIFIER_SYNTAX && fits_frame_index(lvalue);
+
     start_chunk("assignment expression");
+
     // compute the address and push it onto the stack
-    emit_address(node->first_child);
+    if (!direct)
+        emit_address(lvalue);
 
     // compute the new value and push it onto the stack
     emit_expression(node->last_child);
@@ -1244,6 +1324,18 @@ void emit_assignment_expression(struct SyntaxNode *node) {
     if (!types_match(node->type, node->last_child->type)) 
         emit_type_conversion(node->last_child->type, node->type);
 
+    if (direct) {
+        // Copy the value from the top of the stack into the variable, leaving it on the stack
+        int index = frame_index(lvalue->symbol);
+        for (int i = 0; i < node->type->size; i++) {
+            emit("ldy #%i", i + 1);
+            emit("lda (sp),y");
+            emit("ldy #%i", index + i);
+            emit("sta (fp),y");
+        }
+        end_chunk("assignment expression");
+        return;
+    }
 
     // Pop the value and store in tmp (and tmp+1 if two bytes)
     emit("jsr _pop");
@@ -1308,6 +1400,12 @@ void emit_increment_postfix_expression(struct SyntaxNode *node) {
     emit_expression(node->first_child);
 
     start_chunk("++ expression");
+    if (node->first_child->syntax == IDENTIFIER_SYNTAX && fits_frame_index(node->first_child)) {
+        emit_frame_add(node->first_child, "clc", "adc");
+        end_chunk("++ expression");
+        return;
+    }
+
     emit_address(node->first_child);
     emit("jsr _pop");
     emit("sta tmp");
@@ -1336,6 +1434,12 @@ void emit_increment_postfix_expression(struct SyntaxNode *node) {
 void emit_decrement_postfix_expression(struct SyntaxNode *node) {
     emit_expression(node->first_child);
     start_chunk("-- expression");
+    if (node->first_child->syntax == IDENTIFIER_SYNTAX && fits_frame_index(node->first_child)) {
+        emit_frame_add(node->first_child, "sec", "sbc");
+        end_chunk("-- expression");
+        return;
+    }
+
     emit_address(node->first_child);
     emit("jsr _pop");
     emit("sta tmp");
